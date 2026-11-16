@@ -12,11 +12,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2
-      - name: Install Remotion
+      - name: Install Remotion & 3D Engine
         run: |
           npm init -y
-          npm install remotion@4.0.234 @remotion/cli@4.0.234 react@18.3.1 react-dom@18.3.1
-      - name: Build Stylized 2D-3D Hybrid Scenes
+          npm install remotion@4.0.234 @remotion/cli@4.0.234 @remotion/three@4.0.234 three @types/three @react-three/fiber@8.17.10 @react-three/drei@9.114.3 react@18.3.1 react-dom@18.3.1
+      - name: Build 2D-3D Hybrid Engine
         run: |
           mkdir -p public src
           AUDIO=$(ls *.mp3 *.wav *.m4a 2>/dev/null | head -n 1)
@@ -39,94 +39,359 @@ jobs:
           );
           EOF
 
+          cat << 'EOF' > src/textures.ts
+          import * as THREE from "three";
+
+          function makeCanvas(w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void): THREE.CanvasTexture {
+            const c = document.createElement("canvas");
+            c.width = w;
+            c.height = h;
+            const ctx = c.getContext("2d")!;
+            draw(ctx);
+            const tex = new THREE.CanvasTexture(c);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.needsUpdate = true;
+            return tex;
+          }
+
+          export function createEmuTexture(phase: number, panic: boolean): THREE.CanvasTexture {
+            return makeCanvas(512, 512, (ctx) => {
+              ctx.clearRect(0, 0, 512, 512);
+              const legA = Math.sin(phase) * 0.45;
+              const legB = -Math.sin(phase) * 0.45;
+              const bounce = Math.abs(Math.sin(phase)) * 18;
+              ctx.save();
+              ctx.translate(240, 290 - bounce);
+
+              // Shadow
+              ctx.fillStyle = "rgba(36, 23, 38, 0.25)";
+              ctx.beginPath();
+              ctx.ellipse(0, 175 + bounce, 95, 22, 0, 0, Math.PI * 2);
+              ctx.fill();
+
+              // Back Leg
+              ctx.save();
+              ctx.translate(-15, 55);
+              ctx.rotate(legB);
+              ctx.strokeStyle = "#241726";
+              ctx.lineWidth = 18;
+              ctx.lineCap = "round";
+              ctx.beginPath();
+              ctx.moveTo(0, 0); ctx.lineTo(-18, 60); ctx.lineTo(14, 115); ctx.lineTo(44, 115);
+              ctx.stroke();
+              ctx.strokeStyle = "#d9822b";
+              ctx.lineWidth = 8;
+              ctx.stroke();
+              ctx.restore();
+
+              // Tail Feathers
+              ctx.fillStyle = "#463529";
+              ctx.strokeStyle = "#241726";
+              ctx.lineWidth = 12;
+              ctx.lineJoin = "round";
+              ctx.beginPath();
+              ctx.moveTo(-95, -5); ctx.lineTo(-155, -35); ctx.lineTo(-135, 5); ctx.lineTo(-162, 32); ctx.lineTo(-92, 38);
+              ctx.closePath();
+              ctx.fill(); ctx.stroke();
+
+              // Bean Body with Plum Outline
+              ctx.fillStyle = "#614b3c";
+              ctx.beginPath();
+              ctx.ellipse(0, 10, 105, 76, -0.08, 0, Math.PI * 2);
+              ctx.fill(); ctx.stroke();
+
+              // Wing Feather Shading
+              ctx.fillStyle = "#7d624f";
+              ctx.beginPath();
+              ctx.ellipse(-10, 4, 72, 44, -0.15, 0, Math.PI * 2);
+              ctx.fill();
+
+              // Long Neck & Bean Head
+              ctx.save();
+              ctx.translate(72, -25);
+              ctx.rotate(Math.sin(phase) * 0.12);
+              ctx.strokeStyle = "#241726";
+              ctx.lineWidth = 38;
+              ctx.lineCap = "round";
+              ctx.beginPath();
+              ctx.moveTo(0, 15); ctx.quadraticCurveTo(26, -65, 14, -135);
+              ctx.stroke();
+              ctx.strokeStyle = "#6f8296";
+              ctx.lineWidth = 20;
+              ctx.stroke();
+
+              // Head
+              ctx.fillStyle = "#614b3c";
+              ctx.strokeStyle = "#241726";
+              ctx.lineWidth = 12;
+              ctx.beginPath();
+              ctx.ellipse(20, -148, 42, 35, 0.1, 0, Math.PI * 2);
+              ctx.fill(); ctx.stroke();
+
+              // Beak
+              ctx.fillStyle = "#f5a623";
+              ctx.beginPath();
+              ctx.moveTo(56, -155); ctx.lineTo(106, -140); ctx.lineTo(56, -126);
+              ctx.closePath();
+              ctx.fill(); ctx.stroke();
+
+              // Expressive Eye
+              ctx.fillStyle = "#ffffff";
+              ctx.beginPath();
+              ctx.arc(32, -154, panic ? 16 : 13, 0, Math.PI * 2);
+              ctx.fill(); ctx.stroke();
+              ctx.fillStyle = "#241726";
+              ctx.beginPath();
+              ctx.arc(panic ? 36 : 35, -154, 6, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.restore();
+
+              // Front Leg
+              ctx.save();
+              ctx.translate(18, 55);
+              ctx.rotate(legA);
+              ctx.strokeStyle = "#241726";
+              ctx.lineWidth = 18;
+              ctx.lineCap = "round";
+              ctx.beginPath();
+              ctx.moveTo(0, 0); ctx.lineTo(-18, 60); ctx.lineTo(14, 115); ctx.lineTo(44, 115);
+              ctx.stroke();
+              ctx.strokeStyle = "#f5a623";
+              ctx.lineWidth = 8;
+              ctx.stroke();
+              ctx.restore();
+
+              ctx.restore();
+            });
+          }
+
+          export function createSoldierTexture(phase: number, firing: boolean, retreating: boolean): THREE.CanvasTexture {
+            return makeCanvas(512, 512, (ctx) => {
+              ctx.clearRect(0, 0, 512, 512);
+              const bounce = retreating ? Math.abs(Math.sin(phase)) * 20 : (firing ? Math.abs(Math.sin(phase * 3)) * 6 : 0);
+              const legSwing = retreating ? Math.sin(phase) * 0.5 : 0;
+
+              ctx.save();
+              ctx.translate(230, 290 - bounce);
+              if (retreating) ctx.scale(-1, 1);
+
+              // Shadow
+              ctx.fillStyle = "rgba(36, 23, 38, 0.28)";
+              ctx.beginPath();
+              ctx.ellipse(0, 175 + bounce, 85, 20, 0, 0, Math.PI * 2);
+              ctx.fill();
+
+              // Legs
+              [-22, 22].forEach((lx, idx) => {
+                ctx.save();
+                ctx.translate(lx, 85);
+                ctx.rotate(idx === 0 ? legSwing : -legSwing);
+                ctx.strokeStyle = "#241726";
+                ctx.lineWidth = 24;
+                ctx.lineCap = "round";
+                ctx.beginPath();
+                ctx.moveTo(0, 0); ctx.lineTo(0, 82); ctx.lineTo(18, 82);
+                ctx.stroke();
+                ctx.strokeStyle = "#4d3826";
+                ctx.lineWidth = 10;
+                ctx.stroke();
+                ctx.restore();
+              });
+
+              // Bean Character Body
+              ctx.fillStyle = "#738254";
+              ctx.strokeStyle = "#241726";
+              ctx.lineWidth = 13;
+              ctx.beginPath();
+              ctx.roundRect(-62, -95, 124, 195, 62);
+              ctx.fill(); ctx.stroke();
+
+              // Belt & Pouches
+              ctx.fillStyle = "#4a3525";
+              ctx.fillRect(-58, 22, 116, 24);
+              ctx.strokeRect(-58, 22, 116, 24);
+
+              // Expressive Eyes & Brow
+              ctx.fillStyle = "#ffffff";
+              ctx.beginPath();
+              ctx.arc(24, -40, 15, 0, Math.PI * 2);
+              ctx.fill(); ctx.stroke();
+              ctx.fillStyle = "#241726";
+              ctx.beginPath();
+              ctx.arc(28, -40, 7, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.beginPath();
+              ctx.moveTo(8, -62); ctx.lineTo(42, -52);
+              ctx.lineWidth = 9;
+              ctx.stroke();
+
+              // Australian Slouch Hat
+              ctx.fillStyle = "#55613e";
+              ctx.lineWidth = 12;
+              ctx.beginPath();
+              ctx.ellipse(0, -90, 96, 18, -0.06, 0, Math.PI * 2);
+              ctx.fill(); ctx.stroke();
+              ctx.beginPath();
+              ctx.moveTo(-52, -92); ctx.quadraticCurveTo(0, -152, 52, -92);
+              ctx.closePath();
+              ctx.fill(); ctx.stroke();
+
+              // Lewis Machine Gun & Muzzle Flash
+              if (!retreating) {
+                const recoil = firing ? (Math.sin(phase * 4) * 8) : 0;
+                ctx.save();
+                ctx.translate(30 - recoil, 15);
+                // Bipod
+                ctx.strokeStyle = "#241726";
+                ctx.lineWidth = 11;
+                ctx.beginPath();
+                ctx.moveTo(75, 15); ctx.lineTo(48, 155);
+                ctx.moveTo(75, 15); ctx.lineTo(105, 155);
+                ctx.stroke();
+                // Barrel & Pan Magazine
+                ctx.fillStyle = "#393e46";
+                ctx.fillRect(-20, -14, 130, 30);
+                ctx.strokeRect(-20, -14, 130, 30);
+                ctx.fillStyle = "#68707d";
+                ctx.beginPath();
+                ctx.ellipse(42, -22, 34, 11, 0, 0, Math.PI * 2);
+                ctx.fill(); ctx.stroke();
+
+                if (firing && Math.sin(phase * 4) > 0) {
+                  ctx.fillStyle = "#ffd54f";
+                  ctx.strokeStyle = "#ff6f00";
+                  ctx.lineWidth = 6;
+                  ctx.beginPath();
+                  ctx.moveTo(118, -28); ctx.lineTo(195, 2); ctx.lineTo(118, 32); ctx.lineTo(142, 2);
+                  ctx.closePath();
+                  ctx.fill(); ctx.stroke();
+                }
+                ctx.restore();
+              }
+
+              ctx.restore();
+            });
+          }
+          EOF
+
           cat << 'EOF' > src/EmuWar.tsx
-          import React from "react";
-          import { AbsoluteFill, Audio, staticFile, useCurrentFrame, interpolate } from "remotion";
+          import React, { useMemo, useRef, useEffect } from "react";
+          import { AbsoluteFill, Audio, staticFile, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+          import { ThreeCanvas } from "@remotion/three";
+          import { useFrame, useThree } from "@react-three/fiber";
+          import * as THREE from "three";
+          import { createEmuTexture, createSoldierTexture } from "./textures";
           import rawTimings from "./timings.json";
 
-          const EmuSVG: React.FC<{ x: number; y: number; scale: number; frame: number; offset: number; flip?: boolean }> = ({ x, y, scale, frame, offset, flip = false }) => {
-            const f = frame + offset;
-            const bounce = Math.abs(Math.sin(f * 0.28)) * 22;
-            const legA = Math.sin(f * 0.28) * 32;
-            const legB = -Math.sin(f * 0.28) * 32;
-            const neckTilt = Math.sin(f * 0.28) * 8;
+          const CameraRig: React.FC<{ frame: number }> = ({ frame }) => {
+            const { camera } = useThree();
+            useFrame(() => {
+              let cx = 0, cy = 2.4, cz = 9.5;
+              let tx = 0, ty = 1.0, tz = -2.0;
+
+              if (frame < 240) {
+                // Scene 1: Sweeping crane down & follow tracking across 3D wheat field
+                const p = frame / 240;
+                cx = interpolate(p, [0, 1], [-4.5, 3.8]);
+                cy = interpolate(p, [0, 1], [5.8, 2.2]);
+                cz = interpolate(p, [0, 1], [12.5, 8.2]);
+                tx = interpolate(p, [0, 1], [-2.0, 2.5]);
+                ty = 1.1;
+                tz = -2.5;
+              } else if (frame < 540) {
+                // Scene 2: Over-the-shoulder artillery tracking + recoil shake
+                const p = (frame - 240) / 300;
+                const shake = (frame % 4 < 2) ? 0.14 : -0.14;
+                cx = interpolate(p, [0, 1], [-4.2, -2.6]) + shake;
+                cy = 2.1 + Math.abs(shake) * 0.5;
+                cz = interpolate(p, [0, 1], [7.8, 6.2]);
+                tx = 2.2;
+                ty = 1.2;
+                tz = -3.0;
+              } else if (frame < 810) {
+                // Scene 3: Fast low-angle lateral camera track following sprinting emu squads
+                const p = (frame - 540) / 270;
+                cx = interpolate(p, [0, 1], [-5.5, 5.5]);
+                cy = 1.55 + Math.sin(frame * 0.25) * 0.08;
+                cz = 7.4;
+                tx = cx + 1.2;
+                ty = 1.1;
+                tz = -2.5;
+              } else {
+                // Scene 4: Sunset dramatic orbit pull-back
+                const p = (frame - 810) / 240;
+                const angle = interpolate(p, [0, 1], [-0.35, 0.45]);
+                const radius = interpolate(p, [0, 1], [8.5, 12.0]);
+                cx = Math.sin(angle) * radius;
+                cy = interpolate(p, [0, 1], [2.2, 4.2]);
+                cz = Math.cos(angle) * radius;
+                tx = 0.5;
+                ty = 1.2;
+                tz = -2.0;
+              }
+
+              camera.position.set(cx, cy, cz);
+              camera.lookAt(tx, ty, tz);
+            });
+            return null;
+          };
+
+          const WheatField3D: React.FC<{ frame: number }> = ({ frame }) => {
+            const meshRef = useRef<THREE.InstancedMesh>(null);
+            const count = 420;
+            const dummy = useMemo(() => new THREE.Object3D(), []);
+            const stalks = useMemo(() => Array.from({ length: count }, (_, i) => ({
+              x: ((i * 97) % 240) / 10 - 12,
+              z: -((i * 53) % 200) / 10 + 4,
+              h: 0.9 + (i % 5) * 0.25,
+              phase: i * 0.4
+            })), []);
+
+            useEffect(() => {
+              if (!meshRef.current) return;
+              stalks.forEach((s, i) => {
+                dummy.position.set(s.x, s.h * 0.5, s.z);
+                dummy.rotation.z = Math.sin(frame * 0.09 + s.phase) * 0.22;
+                dummy.rotation.x = Math.cos(frame * 0.07 + s.phase) * 0.1;
+                dummy.scale.set(0.09, s.h, 0.09);
+                dummy.updateMatrix();
+                meshRef.current!.setMatrixAt(i, dummy.matrix);
+              });
+              meshRef.current.instanceMatrix.needsUpdate = true;
+            }, [frame, dummy, stalks]);
+
             return (
-              <g transform={`translate(${x}, ${y - bounce}) scale(${flip ? -scale : scale}, ${scale})`}>
-                {/* Shadow */}
-                <ellipse cx="0" cy="145" rx="58" ry="14" fill="rgba(36, 23, 38, 0.28)" />
-                {/* Back Leg */}
-                <g transform={`translate(-10, 65) rotate(${legB})`}>
-                  <path d="M0,0 L-10,45 L10,80 M10,80 L28,80" stroke="#241726" strokeWidth="11" strokeLinecap="round" fill="none" />
-                  <path d="M0,0 L-10,45 L10,80 M10,80 L28,80" stroke="#e09132" strokeWidth="5" strokeLinecap="round" fill="none" />
-                </g>
-                {/* Plum-Outlined Feathered Bean Body */}
-                <ellipse cx="0" cy="20" rx="68" ry="52" fill="#5c4738" stroke="#241726" strokeWidth="9" />
-                <path d="M-45,10 Q-10,-15 35,5 Q15,40 -40,32 Z" fill="#785e4c" />
-                {/* Tail Feathers */}
-                <path d="M-62,15 L-92,-5 L-82,18 L-96,32 L-60,35 Z" fill="#47362b" stroke="#241726" strokeWidth="7" strokeLinejoin="round" />
-                {/* Long Neck & Bean Head */}
-                <g transform={`translate(42, -5) rotate(${neckTilt})`}>
-                  <path d="M0,10 Q18,-45 10,-95" stroke="#241726" strokeWidth="26" strokeLinecap="round" fill="none" />
-                  <path d="M0,10 Q18,-45 10,-95" stroke="#6e7f91" strokeWidth="14" strokeLinecap="round" fill="none" />
-                  <ellipse cx="14" cy="-102" rx="28" ry="24" fill="#5c4738" stroke="#241726" strokeWidth="8" />
-                  {/* Beak */}
-                  <polygon points="38,-106 72,-96 38,-88" fill="#f5a623" stroke="#241726" strokeWidth="6" strokeLinejoin="round" />
-                  {/* Expressive Eye */}
-                  <circle cx="22" cy="-106" r="9" fill="#ffffff" stroke="#241726" strokeWidth="4" />
-                  <circle cx="25" cy="-106" r="4" fill="#241726" />
-                </g>
-                {/* Front Leg */}
-                <g transform={`translate(12, 65) rotate(${legA})`}>
-                  <path d="M0,0 L-10,45 L10,80 M10,80 L28,80" stroke="#241726" strokeWidth="11" strokeLinecap="round" fill="none" />
-                  <path d="M0,0 L-10,45 L10,80 M10,80 L28,80" stroke="#f5a623" strokeWidth="5" strokeLinecap="round" fill="none" />
-                </g>
-              </g>
+              <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
+                <coneGeometry args={[0.5, 1, 5]} />
+                <meshToonMaterial color="#f0c14b" />
+              </instancedMesh>
             );
           };
 
-          const SoldierSVG: React.FC<{ x: number; y: number; scale: number; frame: number; firing: boolean; retreating: boolean }> = ({ x, y, scale, frame, firing, retreating }) => {
-            const recoil = firing ? Math.abs(Math.sin(frame * 1.4)) * 10 : 0;
-            const runBounce = retreating ? Math.abs(Math.sin(frame * 0.3)) * 18 : 0;
-            const legSwing = retreating ? Math.sin(frame * 0.3) * 28 : 0;
+          const CharacterBillboard: React.FC<{ texture: THREE.Texture; position: [number, number, number]; scale?: number; flipX?: boolean }> = ({ texture, position, scale = 3.2, flipX = false }) => {
+            const meshRef = useRef<THREE.Mesh>(null);
+            useFrame(({ camera }) => {
+              if (meshRef.current) {
+                meshRef.current.quaternion.copy(camera.quaternion);
+              }
+            });
             return (
-              <g transform={`translate(${x - recoil}, ${y - runBounce}) scale(${retreating ? -scale : scale}, ${scale})`}>
-                <ellipse cx="0" cy="145" rx="52" ry="13" fill="rgba(36, 23, 38, 0.3)" />
-                {/* Legs */}
-                <line x1="-14" y1="75" x2={-14 - legSwing} y2="140" stroke="#241726" strokeWidth="16" strokeLinecap="round" />
-                <line x1="14" y1="75" x2={14 + legSwing} y2="140" stroke="#241726" strokeWidth="16" strokeLinecap="round" />
-                {/* Bean Torso & Head */}
-                <rect x="-42" y="-55" width="84" height="140" rx="42" fill="#6b7a4f" stroke="#241726" strokeWidth="9" />
-                <path d="M-38,25 L38,25 L38,55 Q0,68 -38,55 Z" fill="#55613e" stroke="#241726" strokeWidth="7" />
-                {/* Face */}
-                <circle cx="18" cy="-18" r="10" fill="#ffffff" stroke="#241726" strokeWidth="4" />
-                <circle cx="21" cy="-18" r="4.5" fill="#241726" />
-                {/* Australian Slouch Hat */}
-                <ellipse cx="0" cy="-52" rx="64" ry="13" fill="#4a5436" stroke="#241726" strokeWidth="8" />
-                <path d="M-34,-52 Q0,-88 34,-52 Z" fill="#5c6b43" stroke="#241726" strokeWidth="8" />
-                {/* Lewis Machine Gun */}
-                {!retreating && (
-                  <g transform="translate(25, 25)">
-                    <line x1="35" y1="15" x2="15" y2="115" stroke="#241726" strokeWidth="9" strokeLinecap="round" />
-                    <line x1="35" y1="15" x2="55" y2="115" stroke="#241726" strokeWidth="9" strokeLinecap="round" />
-                    <rect x="-15" y="-6" width="85" height="22" rx="8" fill="#3a3f47" stroke="#241726" strokeWidth="7" />
-                    <ellipse cx="22" cy="-10" rx="22" ry="7" fill="#5a626e" stroke="#241726" strokeWidth="6" />
-                    {firing && frame % 4 < 2 && (
-                      <polygon points="75,-18 125,5 75,26 92,5" fill="#ffd54f" stroke="#ff6f00" strokeWidth="4" />
-                    )}
-                  </g>
-                )}
-              </g>
+              <mesh ref={meshRef} position={position} scale={[flipX ? -scale : scale, scale, 1]}>
+                <planeGeometry args={[1, 1]} />
+                <meshBasicMaterial map={texture} transparent alphaTest={0.05} side={THREE.DoubleSide} />
+              </mesh>
             );
           };
 
           export const EmuWar: React.FC = () => {
             const frame = useCurrentFrame();
+            const { width, height } = useVideoConfig();
             const scene = frame < 240 ? 1 : frame < 540 ? 2 : frame < 810 ? 3 : 4;
-            const shakeX = (scene === 2 && frame % 6 < 3) ? 8 : 0;
-            const shakeY = (scene === 2 && frame % 6 < 3) ? -6 : 0;
-            const bgShift = interpolate(frame, [0, 1050], [0, -350]);
 
-            // Parse uploaded Cartesia/Whisper JSON captions if present
+            const emuTexA = useMemo(() => createEmuTexture(frame * 0.35, scene === 2), [frame, scene]);
+            const emuTexB = useMemo(() => createEmuTexture(frame * 0.35 + 1.8, scene === 2), [frame, scene]);
+            const soldierTex = useMemo(() => createSoldierTexture(frame * 0.35, scene === 2, scene === 4), [frame, scene]);
+
             let dynamicCaption = "";
             const data: any = rawTimings;
             const tSec = frame / 30;
@@ -140,97 +405,91 @@ jobs:
 
             const titles: Record<number, { top: string; sub: string }> = {
               1: { top: "1932: WESTERN AUSTRALIA", sub: "20,000 Emus Invade the Wheat Fields" },
-              2: { top: "ROYAL ARTILLERY DEPLOYS", sub: "Machine Guns vs. Flightless Birds" },
+              2: { top: "ROYAL ARTILLERY DEPLOYS", sub: "Lewis Machine Guns vs. Flightless Birds" },
               3: { top: "GUERRILLA EMU TACTICS", sub: "Splitting Into Squads at 50 km/h" },
               4: { top: "VICTORY: THE EMUS", sub: "The Australian Army Retreats" },
             };
 
-            const emuChargeX = interpolate(frame % 150, [0, 150], [-180, 1260]);
-            const emuSplitTop = interpolate(frame, [540, 810], [1150, 960]);
-            const emuSplitBot = interpolate(frame, [540, 810], [1250, 1480]);
-            const soldierX = scene === 4 ? interpolate(frame, [810, 1050], [260, -250]) : 240;
+            const emuX1 = interpolate(frame % 160, [0, 160], [-7.5, 7.5]);
+            const emuSplitZ = scene === 3 ? interpolate(frame, [540, 810], [-2.0, -7.5]) : -2.2;
+            const emuSplitZ2 = scene === 3 ? interpolate(frame, [540, 810], [-1.5, 2.5]) : -0.8;
+            const retreatX = scene === 4 ? interpolate(frame, [810, 1050], [-2.2, -9.5]) : -2.6;
 
             return (
-              <AbsoluteFill style={{ backgroundColor: "#3c8ce7" }}>
-                <svg viewBox="0 0 1080 1920" width="1080" height="1920" style={{ transform: `translate(${shakeX}px, ${shakeY}px)` }}>
-                  <defs>
-                    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={scene === 4 ? "#ff7e5f" : "#2565ae"} />
-                      <stop offset="65%" stopColor={scene === 4 ? "#feb47b" : "#6dd5fa"} />
-                      <stop offset="100%" stopColor="#fff3b0" />
-                    </linearGradient>
-                    <linearGradient id="wheatGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f5c84c" />
-                      <stop offset="100%" stopColor="#b87b1e" />
-                    </linearGradient>
-                  </defs>
+              <AbsoluteFill style={{ backgroundColor: scene === 4 ? "#e87a5d" : "#2f7ed8" }}>
+                <ThreeCanvas width={width} height={height} camera={{ fov: 45, near: 0.1, far: 100 }}>
+                  <CameraRig frame={frame} />
+                  <color attach="background" args={[scene === 4 ? "#f28b66" : "#4ea1f3"]} />
+                  <fog attach="fog" args={[scene === 4 ? "#fbc299" : "#9bd0ff", 10, 32]} />
+                  <ambientLight intensity={0.85} color="#fff6e0" />
+                  <directionalLight position={[8, 14, 6]} intensity={1.7} color="#ffe9b3" />
 
-                  {/* Painted Sky */}
-                  <rect width="1080" height="1920" fill="url(#skyGrad)" />
-                  <circle cx="840" cy={scene === 4 ? "760" : "420"} r="110" fill="#fff5c0" opacity="0.85" />
+                  {/* 3D Golden Terrain */}
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -4]}>
+                    <planeGeometry args={[60, 60]} />
+                    <meshToonMaterial color="#c98e2b" />
+                  </mesh>
 
-                  {/* 3D Layered Distant Blue Hills */}
-                  <g transform={`translate(${bgShift * 0.3}, 0)`}>
-                    <path d="M-100,920 Q220,680 560,880 T1250,820 L1500,1200 L-100,1200 Z" fill="#5d76a8" />
-                    <path d="M-100,980 Q380,760 780,940 T1500,890 L1500,1250 L-100,1250 Z" fill="#465c8a" />
-                  </g>
+                  {/* 3D Distant Painted Hills */}
+                  <mesh position={[-8, 1.2, -18]}>
+                    <sphereGeometry args={[7, 24, 16]} />
+                    <meshToonMaterial color="#5870a6" />
+                  </mesh>
+                  <mesh position={[7, 1.6, -20]}>
+                    <sphereGeometry args={[8.5, 24, 16]} />
+                    <meshToonMaterial color="#465c8f" />
+                  </mesh>
 
-                  {/* Painted 3D Golden Wheat Field */}
-                  <rect x="0" y="960" width="1080" height="960" fill="url(#wheatGrad)" />
-                  {/* Swaying Wheat Stalks */}
-                  <g transform={`translate(${bgShift}, 0)`}>
-                    {Array.from({ length: 45 }).map((_, i) => {
-                      const wx = i * 36;
-                      const wy = 990 + (i % 7) * 115;
-                      const sway = Math.sin(frame * 0.1 + i) * 12;
-                      return (
-                        <g key={i} transform={`translate(${wx}, ${wy})`}>
-                          <path d={`M0,60 Q${sway},25 ${sway * 1.5},0`} stroke="#d4942a" strokeWidth="6" fill="none" />
-                          <ellipse cx={sway * 1.5} cy="-8" rx="6" ry="16" fill="#ffe07d" />
-                        </g>
-                      );
-                    })}
-                  </g>
+                  {/* 3D Wooden Fence Posts */}
+                  {[-6, -3, 0, 3, 6].map((fx, i) => (
+                    <group key={i} position={[fx, 0.7, -5.5]}>
+                      <mesh>
+                        <boxGeometry args={[0.18, 1.4, 0.18]} />
+                        <meshToonMaterial color="#5e3c24" />
+                      </mesh>
+                      <mesh position={[1.5, 0.25, 0]}>
+                        <boxGeometry args={[3.0, 0.12, 0.1]} />
+                        <meshToonMaterial color="#70482b" />
+                      </mesh>
+                    </group>
+                  ))}
 
-                  {/* SCENE 1: Emu Invasion */}
+                  <WheatField3D frame={frame} />
+
+                  {/* Characters in 3D Space */}
                   {scene === 1 && (
                     <>
-                      <EmuSVG x={emuChargeX} y={1140} scale={1.15} frame={frame} offset={0} />
-                      <EmuSVG x={emuChargeX - 240} y={1280} scale={1.35} frame={frame} offset={12} />
-                      <EmuSVG x={emuChargeX - 480} y={1180} scale={1.05} frame={frame} offset={24} />
+                      <CharacterBillboard texture={emuTexA} position={[emuX1, 1.55, -2.0]} scale={3.3} />
+                      <CharacterBillboard texture={emuTexB} position={[emuX1 - 2.4, 1.5, -3.5]} scale={3.1} />
+                      <CharacterBillboard texture={emuTexA} position={[emuX1 - 4.2, 1.6, -0.8]} scale={3.5} />
                     </>
                   )}
 
-                  {/* SCENE 2: Soldiers Firing Machine Guns */}
                   {scene === 2 && (
                     <>
-                      <SoldierSVG x={230} y={1230} scale={1.25} frame={frame} firing={true} retreating={false} />
-                      <SoldierSVG x={430} y={1360} scale={1.35} frame={frame + 4} firing={true} retreating={false} />
-                      <EmuSVG x={880 + Math.sin(frame * 0.2) * 40} y={1160} scale={1.0} frame={frame} offset={5} flip={true} />
-                      <EmuSVG x={960 + Math.cos(frame * 0.2) * 40} y={1320} scale={1.15} frame={frame} offset={15} flip={true} />
+                      <CharacterBillboard texture={soldierTex} position={[-2.6, 1.55, 1.2]} scale={3.4} />
+                      <CharacterBillboard texture={soldierTex} position={[-1.4, 1.55, -1.2]} scale={3.2} />
+                      <CharacterBillboard texture={emuTexA} position={[3.6, 1.55, -1.5]} scale={3.3} flipX />
+                      <CharacterBillboard texture={emuTexB} position={[5.2, 1.55, -3.4]} scale={3.2} flipX />
                     </>
                   )}
 
-                  {/* SCENE 3: Guerrilla Emu Split Tactics */}
                   {scene === 3 && (
                     <>
-                      <EmuSVG x={emuChargeX} y={emuSplitTop} scale={1.05} frame={frame} offset={3} />
-                      <EmuSVG x={emuChargeX - 220} y={emuSplitTop - 40} scale={0.95} frame={frame} offset={11} />
-                      <EmuSVG x={emuChargeX - 100} y={emuSplitBot} scale={1.4} frame={frame} offset={19} />
-                      {/* Dust Clouds */}
-                      <circle cx={emuChargeX - 120} cy={emuSplitBot + 120} r={35 + (frame % 15) * 2} fill="#fff3d1" opacity="0.55" />
+                      <CharacterBillboard texture={emuTexA} position={[emuX1, 1.55, emuSplitZ]} scale={3.2} />
+                      <CharacterBillboard texture={emuTexB} position={[emuX1 - 2.0, 1.55, emuSplitZ2]} scale={3.5} />
+                      <CharacterBillboard texture={emuTexA} position={[emuX1 - 3.8, 1.55, -2.4]} scale={3.3} />
                     </>
                   )}
 
-                  {/* SCENE 4: Emus Win, Soldiers Retreat */}
                   {scene === 4 && (
                     <>
-                      <SoldierSVG x={soldierX} y={1320} scale={1.2} frame={frame} firing={false} retreating={true} />
-                      <EmuSVG x={660} y={1160} scale={1.35} frame={frame} offset={0} flip={true} />
-                      <EmuSVG x={860} y={1260} scale={1.45} frame={frame} offset={10} flip={true} />
+                      <CharacterBillboard texture={soldierTex} position={[retreatX, 1.55, 0.5]} scale={3.3} />
+                      <CharacterBillboard texture={emuTexA} position={[2.2, 1.6, -1.2]} scale={3.5} flipX />
+                      <CharacterBillboard texture={emuTexB} position={[4.2, 1.6, -2.8]} scale={3.4} flipX />
                     </>
                   )}
-                </svg>
+                </ThreeCanvas>
 
                 {/* Top Banner */}
                 <div style={{ position: "absolute", top: 130, width: "100%", textAlign: "center", padding: "0 40px", fontFamily: "sans-serif" }}>
@@ -242,10 +501,10 @@ jobs:
                   </div>
                 </div>
 
-                {/* Live Synced Captions from JSON */}
+                {/* Live Synced Captions */}
                 {dynamicCaption && (
                   <div style={{ position: "absolute", bottom: 220, width: "100%", textAlign: "center", padding: "0 50px", fontFamily: "sans-serif" }}>
-                    <span style={{ background: "rgba(36, 23, 38, 0.88)", color: "#ffffff", padding: "14px 28px", borderRadius: 16, fontSize: 40, fontWeight: 900, lineHeight: 1.4, boxShadow: "0 6px 18px rgba(0,0,0,0.45)" }}>
+                    <span style={{ background: "rgba(36, 23, 38, 0.88)", color: "#ffffff", padding: "14px 28px", borderRadius: 16, fontSize: 40, fontWeight: 900, lineHeight: 1.4 }}>
                       {dynamicCaption}
                     </span>
                   </div>
@@ -258,7 +517,7 @@ jobs:
           EOF
 
       - name: Render Video
-        run: npx remotion render src/index.ts EmuWar final_emu_war.mp4 --concurrency=2 --crf=22
+        run: npx remotion render src/index.ts EmuWar final_emu_war.mp4 --gl=swiftshader --concurrency=2 --crf=22
       - name: Upload Video
         uses: actions/upload-artifact@v4
         with:
