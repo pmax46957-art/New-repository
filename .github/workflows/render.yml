@@ -16,7 +16,7 @@ jobs:
         run: |
           npm init -y
           npm install remotion@4.0.234 @remotion/cli@4.0.234 @remotion/three@4.0.234 three @types/three @react-three/fiber@8.17.10 @react-three/drei@9.114.3 react@18.3.1 react-dom@18.3.1
-      - name: Build 2D-3D Hybrid Engine
+      - name: Build Beat-Synced 2D-3D Hybrid Engine
         run: |
           mkdir -p public src
           AUDIO=$(ls *.mp3 *.wav *.m4a 2>/dev/null | head -n 1)
@@ -54,110 +54,178 @@ jobs:
             return tex;
           }
 
-          export function createEmuTexture(phase: number, panic: boolean): THREE.CanvasTexture {
-            return makeCanvas(512, 512, (ctx) => {
-              ctx.clearRect(0, 0, 512, 512);
-              const legA = Math.sin(phase) * 0.45;
-              const legB = -Math.sin(phase) * 0.45;
-              const bounce = Math.abs(Math.sin(phase)) * 18;
-              ctx.save();
-              ctx.translate(240, 290 - bounce);
+          export function createPaintedBackdrop(isSunset: boolean): THREE.CanvasTexture {
+            return makeCanvas(1024, 512, (ctx) => {
+              const sky = ctx.createLinearGradient(0, 0, 0, 512);
+              if (isSunset) {
+                sky.addColorStop(0, "#2b2d5c");
+                sky.addColorStop(0.45, "#d96b43");
+                sky.addColorStop(0.85, "#f7b267");
+                sky.addColorStop(1, "#ffe599");
+              } else {
+                sky.addColorStop(0, "#1d5fa3");
+                sky.addColorStop(0.55, "#5ca9f5");
+                sky.addColorStop(0.9, "#bfe3ff");
+                sky.addColorStop(1, "#fff4cc");
+              }
+              ctx.fillStyle = sky;
+              ctx.fillRect(0, 0, 1024, 512);
 
-              // Shadow
-              ctx.fillStyle = "rgba(36, 23, 38, 0.25)";
+              // Sun Glow
+              const sunY = isSunset ? 330 : 150;
+              const glow = ctx.createRadialGradient(780, sunY, 15, 780, sunY, 160);
+              glow.addColorStop(0, "rgba(255, 250, 210, 0.95)");
+              glow.addColorStop(0.4, "rgba(255, 220, 130, 0.45)");
+              glow.addColorStop(1, "rgba(255, 220, 130, 0)");
+              ctx.fillStyle = glow;
+              ctx.fillRect(0, 0, 1024, 512);
+
+              // Stylized Painted Clouds
+              ctx.fillStyle = isSunset ? "rgba(255, 210, 175, 0.65)" : "rgba(255, 255, 255, 0.78)";
+              [[180, 110, 75], [240, 100, 90], [310, 115, 65], [620, 140, 60], [680, 132, 80], [740, 145, 55]].forEach(([cx, cy, r]) => {
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fill();
+              });
+
+              // Distant Mountain Ranges
+              ctx.fillStyle = isSunset ? "#543b5c" : "#5674ab";
               ctx.beginPath();
-              ctx.ellipse(0, 175 + bounce, 95, 22, 0, 0, Math.PI * 2);
+              ctx.moveTo(0, 512); ctx.lineTo(0, 350);
+              ctx.quadraticCurveTo(180, 240, 380, 340);
+              ctx.quadraticCurveTo(600, 220, 820, 330);
+              ctx.quadraticCurveTo(940, 280, 1024, 340);
+              ctx.lineTo(1024, 512);
+              ctx.fill();
+
+              ctx.fillStyle = isSunset ? "#3b2842" : "#3f5a8c";
+              ctx.beginPath();
+              ctx.moveTo(0, 512); ctx.lineTo(0, 390);
+              ctx.quadraticCurveTo(260, 310, 520, 385);
+              ctx.quadraticCurveTo(790, 290, 1024, 380);
+              ctx.lineTo(1024, 512);
+              ctx.fill();
+            });
+          }
+
+          export function createEmuTexture(step: number, mode: "run" | "panic" | "smug"): THREE.CanvasTexture {
+            return makeCanvas(420, 420, (ctx) => {
+              const phase = step * (Math.PI / 4);
+              const isMoving = mode !== "smug";
+              const legA = isMoving ? Math.sin(phase) * 0.52 : 0.05;
+              const legB = isMoving ? -Math.sin(phase) * 0.52 : -0.05;
+              const bounce = isMoving ? Math.abs(Math.sin(phase)) * 18 : Math.sin(phase) * 4;
+              const stretchY = isMoving ? 1 + Math.sin(phase * 2) * 0.06 : 1;
+
+              ctx.save();
+              ctx.translate(200, 235 - bounce);
+
+              // Ground Contact Shadow
+              ctx.fillStyle = "rgba(36, 23, 38, 0.3)";
+              ctx.beginPath();
+              ctx.ellipse(0, 145 + bounce, 78, 18, 0, 0, Math.PI * 2);
               ctx.fill();
 
               // Back Leg
               ctx.save();
-              ctx.translate(-15, 55);
+              ctx.translate(-14, 42);
               ctx.rotate(legB);
               ctx.strokeStyle = "#241726";
-              ctx.lineWidth = 18;
+              ctx.lineWidth = 15;
               ctx.lineCap = "round";
               ctx.beginPath();
-              ctx.moveTo(0, 0); ctx.lineTo(-18, 60); ctx.lineTo(14, 115); ctx.lineTo(44, 115);
+              ctx.moveTo(0, 0); ctx.lineTo(-16, 48); ctx.lineTo(12, 95); ctx.lineTo(36, 95);
               ctx.stroke();
               ctx.strokeStyle = "#d9822b";
-              ctx.lineWidth = 8;
+              ctx.lineWidth = 6;
               ctx.stroke();
               ctx.restore();
 
               // Tail Feathers
               ctx.fillStyle = "#463529";
               ctx.strokeStyle = "#241726";
-              ctx.lineWidth = 12;
+              ctx.lineWidth = 10;
               ctx.lineJoin = "round";
               ctx.beginPath();
-              ctx.moveTo(-95, -5); ctx.lineTo(-155, -35); ctx.lineTo(-135, 5); ctx.lineTo(-162, 32); ctx.lineTo(-92, 38);
+              ctx.moveTo(-75, -6); ctx.lineTo(-128, -32); ctx.lineTo(-110, 4); ctx.lineTo(-134, 28); ctx.lineTo(-72, 32);
               ctx.closePath();
               ctx.fill(); ctx.stroke();
 
-              // Bean Body with Plum Outline
+              // Feathered Bean Body with Squash & Stretch
+              ctx.save();
+              ctx.scale(2 - stretchY, stretchY);
               ctx.fillStyle = "#614b3c";
               ctx.beginPath();
-              ctx.ellipse(0, 10, 105, 76, -0.08, 0, Math.PI * 2);
+              ctx.ellipse(0, 8, 86, 62, -0.08, 0, Math.PI * 2);
               ctx.fill(); ctx.stroke();
 
-              // Wing Feather Shading
-              ctx.fillStyle = "#7d624f";
+              // Highlight Feather Layer
+              ctx.fillStyle = "#806450";
               ctx.beginPath();
-              ctx.ellipse(-10, 4, 72, 44, -0.15, 0, Math.PI * 2);
+              ctx.ellipse(-8, 2, 58, 36, -0.15, 0, Math.PI * 2);
               ctx.fill();
+              ctx.restore();
 
-              // Long Neck & Bean Head
+              // Neck & Bean Head
               ctx.save();
-              ctx.translate(72, -25);
-              ctx.rotate(Math.sin(phase) * 0.12);
+              ctx.translate(60, -20);
+              ctx.rotate(isMoving ? Math.sin(phase) * 0.14 : Math.sin(phase) * 0.05);
               ctx.strokeStyle = "#241726";
-              ctx.lineWidth = 38;
+              ctx.lineWidth = 30;
               ctx.lineCap = "round";
               ctx.beginPath();
-              ctx.moveTo(0, 15); ctx.quadraticCurveTo(26, -65, 14, -135);
+              ctx.moveTo(0, 12); ctx.quadraticCurveTo(22, -52, 12, -108);
               ctx.stroke();
               ctx.strokeStyle = "#6f8296";
-              ctx.lineWidth = 20;
+              ctx.lineWidth = 16;
               ctx.stroke();
 
               // Head
               ctx.fillStyle = "#614b3c";
               ctx.strokeStyle = "#241726";
-              ctx.lineWidth = 12;
+              ctx.lineWidth = 10;
               ctx.beginPath();
-              ctx.ellipse(20, -148, 42, 35, 0.1, 0, Math.PI * 2);
+              ctx.ellipse(16, -120, 34, 29, 0.1, 0, Math.PI * 2);
               ctx.fill(); ctx.stroke();
 
               // Beak
               ctx.fillStyle = "#f5a623";
               ctx.beginPath();
-              ctx.moveTo(56, -155); ctx.lineTo(106, -140); ctx.lineTo(56, -126);
+              ctx.moveTo(46, -126); ctx.lineTo(86, -114); ctx.lineTo(46, -102);
               ctx.closePath();
               ctx.fill(); ctx.stroke();
 
-              // Expressive Eye
+              // Expressive Eye (Panic vs Smug vs Normal)
               ctx.fillStyle = "#ffffff";
               ctx.beginPath();
-              ctx.arc(32, -154, panic ? 16 : 13, 0, Math.PI * 2);
+              ctx.arc(26, -125, mode === "panic" ? 14 : 11, 0, Math.PI * 2);
               ctx.fill(); ctx.stroke();
               ctx.fillStyle = "#241726";
               ctx.beginPath();
-              ctx.arc(panic ? 36 : 35, -154, 6, 0, Math.PI * 2);
+              ctx.arc(mode === "panic" ? 30 : 28, -125, 5, 0, Math.PI * 2);
               ctx.fill();
+              if (mode === "smug") {
+                ctx.fillStyle = "#614b3c";
+                ctx.fillRect(14, -138, 26, 10);
+                ctx.beginPath();
+                ctx.moveTo(14, -128); ctx.lineTo(40, -128);
+                ctx.lineWidth = 5;
+                ctx.stroke();
+              }
               ctx.restore();
 
               // Front Leg
               ctx.save();
-              ctx.translate(18, 55);
+              ctx.translate(16, 42);
               ctx.rotate(legA);
               ctx.strokeStyle = "#241726";
-              ctx.lineWidth = 18;
+              ctx.lineWidth = 15;
               ctx.lineCap = "round";
               ctx.beginPath();
-              ctx.moveTo(0, 0); ctx.lineTo(-18, 60); ctx.lineTo(14, 115); ctx.lineTo(44, 115);
+              ctx.moveTo(0, 0); ctx.lineTo(-16, 48); ctx.lineTo(12, 95); ctx.lineTo(36, 95);
               ctx.stroke();
               ctx.strokeStyle = "#f5a623";
-              ctx.lineWidth = 8;
+              ctx.lineWidth = 6;
               ctx.stroke();
               ctx.restore();
 
@@ -165,35 +233,37 @@ jobs:
             });
           }
 
-          export function createSoldierTexture(phase: number, firing: boolean, retreating: boolean): THREE.CanvasTexture {
-            return makeCanvas(512, 512, (ctx) => {
-              ctx.clearRect(0, 0, 512, 512);
-              const bounce = retreating ? Math.abs(Math.sin(phase)) * 20 : (firing ? Math.abs(Math.sin(phase * 3)) * 6 : 0);
-              const legSwing = retreating ? Math.sin(phase) * 0.5 : 0;
+          export function createSoldierTexture(step: number, mode: "aim" | "fire" | "retreat"): THREE.CanvasTexture {
+            return makeCanvas(420, 420, (ctx) => {
+              const phase = step * (Math.PI / 4);
+              const retreating = mode === "retreat";
+              const firing = mode === "fire";
+              const bounce = retreating ? Math.abs(Math.sin(phase)) * 18 : (firing ? (step % 2) * 5 : Math.sin(phase) * 2);
+              const legSwing = retreating ? Math.sin(phase) * 0.55 : 0;
 
               ctx.save();
-              ctx.translate(230, 290 - bounce);
+              ctx.translate(190, 235 - bounce);
               if (retreating) ctx.scale(-1, 1);
 
               // Shadow
-              ctx.fillStyle = "rgba(36, 23, 38, 0.28)";
+              ctx.fillStyle = "rgba(36, 23, 38, 0.3)";
               ctx.beginPath();
-              ctx.ellipse(0, 175 + bounce, 85, 20, 0, 0, Math.PI * 2);
+              ctx.ellipse(0, 145 + bounce, 72, 16, 0, 0, Math.PI * 2);
               ctx.fill();
 
               // Legs
-              [-22, 22].forEach((lx, idx) => {
+              [-18, 18].forEach((lx, idx) => {
                 ctx.save();
-                ctx.translate(lx, 85);
+                ctx.translate(lx, 70);
                 ctx.rotate(idx === 0 ? legSwing : -legSwing);
                 ctx.strokeStyle = "#241726";
-                ctx.lineWidth = 24;
+                ctx.lineWidth = 20;
                 ctx.lineCap = "round";
                 ctx.beginPath();
-                ctx.moveTo(0, 0); ctx.lineTo(0, 82); ctx.lineTo(18, 82);
+                ctx.moveTo(0, 0); ctx.lineTo(0, 70); ctx.lineTo(16, 70);
                 ctx.stroke();
                 ctx.strokeStyle = "#4d3826";
-                ctx.lineWidth = 10;
+                ctx.lineWidth = 9;
                 ctx.stroke();
                 ctx.restore();
               });
@@ -201,68 +271,70 @@ jobs:
               // Bean Character Body
               ctx.fillStyle = "#738254";
               ctx.strokeStyle = "#241726";
-              ctx.lineWidth = 13;
+              ctx.lineWidth = 11;
               ctx.beginPath();
-              ctx.roundRect(-62, -95, 124, 195, 62);
+              ctx.roundRect(-52, -78, 104, 162, 52);
               ctx.fill(); ctx.stroke();
 
-              // Belt & Pouches
+              // Belt & Webbing
               ctx.fillStyle = "#4a3525";
-              ctx.fillRect(-58, 22, 116, 24);
-              ctx.strokeRect(-58, 22, 116, 24);
+              ctx.fillRect(-49, 18, 98, 20);
+              ctx.strokeRect(-49, 18, 98, 20);
 
-              // Expressive Eyes & Brow
+              // Expressive Eye & Brow
               ctx.fillStyle = "#ffffff";
               ctx.beginPath();
-              ctx.arc(24, -40, 15, 0, Math.PI * 2);
+              ctx.arc(20, -34, retreating ? 15 : 12, 0, Math.PI * 2);
               ctx.fill(); ctx.stroke();
               ctx.fillStyle = "#241726";
               ctx.beginPath();
-              ctx.arc(28, -40, 7, 0, Math.PI * 2);
+              ctx.arc(retreating ? 24 : 23, -34, 5.5, 0, Math.PI * 2);
               ctx.fill();
               ctx.beginPath();
-              ctx.moveTo(8, -62); ctx.lineTo(42, -52);
-              ctx.lineWidth = 9;
+              if (retreating) {
+                ctx.moveTo(6, -54); ctx.lineTo(34, -48);
+              } else {
+                ctx.moveTo(6, -50); ctx.lineTo(35, -42);
+              }
+              ctx.lineWidth = 8;
               ctx.stroke();
 
               // Australian Slouch Hat
               ctx.fillStyle = "#55613e";
-              ctx.lineWidth = 12;
+              ctx.lineWidth = 10;
               ctx.beginPath();
-              ctx.ellipse(0, -90, 96, 18, -0.06, 0, Math.PI * 2);
+              ctx.ellipse(0, -76, 80, 16, -0.06, 0, Math.PI * 2);
               ctx.fill(); ctx.stroke();
               ctx.beginPath();
-              ctx.moveTo(-52, -92); ctx.quadraticCurveTo(0, -152, 52, -92);
+              ctx.moveTo(-42, -78); ctx.quadraticCurveTo(0, -126, 42, -78);
               ctx.closePath();
               ctx.fill(); ctx.stroke();
 
-              // Lewis Machine Gun & Muzzle Flash
+              // Lewis Machine Gun
               if (!retreating) {
-                const recoil = firing ? (Math.sin(phase * 4) * 8) : 0;
+                const recoil = firing ? (step % 2) * 8 : 0;
                 ctx.save();
-                ctx.translate(30 - recoil, 15);
-                // Bipod
+                ctx.translate(24 - recoil, 14);
                 ctx.strokeStyle = "#241726";
-                ctx.lineWidth = 11;
+                ctx.lineWidth = 9;
                 ctx.beginPath();
-                ctx.moveTo(75, 15); ctx.lineTo(48, 155);
-                ctx.moveTo(75, 15); ctx.lineTo(105, 155);
+                ctx.moveTo(62, 14); ctx.lineTo(40, 128);
+                ctx.moveTo(62, 14); ctx.lineTo(86, 128);
                 ctx.stroke();
-                // Barrel & Pan Magazine
                 ctx.fillStyle = "#393e46";
-                ctx.fillRect(-20, -14, 130, 30);
-                ctx.strokeRect(-20, -14, 130, 30);
+                ctx.fillRect(-16, -12, 106, 25);
+                ctx.strokeRect(-16, -12, 106, 25);
                 ctx.fillStyle = "#68707d";
                 ctx.beginPath();
-                ctx.ellipse(42, -22, 34, 11, 0, 0, Math.PI * 2);
+                ctx.ellipse(36, -18, 28, 9, 0, 0, Math.PI * 2);
                 ctx.fill(); ctx.stroke();
 
-                if (firing && Math.sin(phase * 4) > 0) {
+                if (firing && step % 2 === 0) {
                   ctx.fillStyle = "#ffd54f";
                   ctx.strokeStyle = "#ff6f00";
-                  ctx.lineWidth = 6;
+                  ctx.lineWidth = 5;
                   ctx.beginPath();
-                  ctx.moveTo(118, -28); ctx.lineTo(195, 2); ctx.lineTo(118, 32); ctx.lineTo(142, 2);
+                  ctx.moveTo(98, -24); ctx.lineTo(165, 2); ctx.lineTo(98, 28); ctx.lineTo(118, 2);
                   ctx.closePath();
                   ctx.fill(); ctx.stroke();
                 }
@@ -276,58 +348,95 @@ jobs:
 
           cat << 'EOF' > src/EmuWar.tsx
           import React, { useMemo, useRef, useEffect } from "react";
-          import { AbsoluteFill, Audio, staticFile, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+          import { AbsoluteFill, Audio, staticFile, useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
           import { ThreeCanvas } from "@remotion/three";
           import { useFrame, useThree } from "@react-three/fiber";
           import * as THREE from "three";
-          import { createEmuTexture, createSoldierTexture } from "./textures";
+          import { createEmuTexture, createSoldierTexture, createPaintedBackdrop } from "./textures";
           import rawTimings from "./timings.json";
 
-          const CameraRig: React.FC<{ frame: number }> = ({ frame }) => {
+          interface BeatSegment {
+            start: number;
+            end: number;
+            text: string;
+          }
+
+          function extractBeatSegments(data: any): BeatSegment[] {
+            if (Array.isArray(data?.segments) && data.segments.length > 0) {
+              return data.segments.map((s: any) => ({ start: Number(s.start) || 0, end: Number(s.end) || 35, text: String(s.text || "").trim() }));
+            }
+            const words = data?.word_timestamps?.words || data?.words;
+            if (Array.isArray(words) && words.length > 0) {
+              const out: BeatSegment[] = [];
+              let chunk: any[] = [];
+              words.forEach((w: any, idx: number) => {
+                chunk.push(w);
+                const wordStr = String(w.word || w.text || "");
+                const isEndPunct = /[.!?।,]$/.test(wordStr);
+                if (chunk.length >= 6 || isEndPunct || idx === words.length - 1) {
+                  out.push({
+                    start: Number(chunk[0].start) || 0,
+                    end: Number(chunk[chunk.length - 1].end) || 35,
+                    text: chunk.map((c: any) => c.word || c.text).join(" ").trim(),
+                  });
+                  chunk = [];
+                }
+              });
+              return out;
+            }
+            return [
+              { start: 0, end: 8.5, text: "" },
+              { start: 8.5, end: 18.0, text: "" },
+              { start: 18.0, end: 27.0, text: "" },
+              { start: 27.0, end: 35.0, text: "" },
+            ];
+          }
+
+          const CameraRig: React.FC<{ frame: number; fps: number; beatIndex: number; beatStartFrame: number; act: number }> = ({ frame, fps, beatIndex, beatStartFrame, act }) => {
             const { camera } = useThree();
             useFrame(() => {
-              let cx = 0, cy = 2.4, cz = 9.5;
-              let tx = 0, ty = 1.0, tz = -2.0;
+              const beatPop = spring({ frame: frame - beatStartFrame, fps, config: { damping: 14, stiffness: 120 } });
+              const punchZ = interpolate(beatPop, [0, 1], [0.85, 0]);
+              const altDir = beatIndex % 2 === 0 ? 1 : -1;
 
-              if (frame < 240) {
-                // Scene 1: Sweeping crane down & follow tracking across 3D wheat field
+              let cx = 0, cy = 2.4, cz = 9.0;
+              let tx = 0, ty = 1.2, tz = -2.0;
+
+              if (act === 1) {
                 const p = frame / 240;
-                cx = interpolate(p, [0, 1], [-4.5, 3.8]);
-                cy = interpolate(p, [0, 1], [5.8, 2.2]);
-                cz = interpolate(p, [0, 1], [12.5, 8.2]);
-                tx = interpolate(p, [0, 1], [-2.0, 2.5]);
-                ty = 1.1;
-                tz = -2.5;
-              } else if (frame < 540) {
-                // Scene 2: Over-the-shoulder artillery tracking + recoil shake
+                cx = interpolate(p, [0, 1], [-4.2, 3.6]) + altDir * 0.4;
+                cy = interpolate(p, [0, 1], [5.2, 2.1]);
+                cz = interpolate(p, [0, 1], [11.8, 7.6]) + punchZ;
+                tx = interpolate(p, [0, 1], [-1.8, 2.2]);
+                ty = 1.25;
+                tz = -2.2;
+              } else if (act === 2) {
                 const p = (frame - 240) / 300;
-                const shake = (frame % 4 < 2) ? 0.14 : -0.14;
-                cx = interpolate(p, [0, 1], [-4.2, -2.6]) + shake;
-                cy = 2.1 + Math.abs(shake) * 0.5;
-                cz = interpolate(p, [0, 1], [7.8, 6.2]);
-                tx = 2.2;
-                ty = 1.2;
-                tz = -3.0;
-              } else if (frame < 810) {
-                // Scene 3: Fast low-angle lateral camera track following sprinting emu squads
+                const shake = (frame % 4 < 2) ? 0.16 : -0.16;
+                cx = interpolate(p, [0, 1], [-3.8, -2.2]) + shake;
+                cy = 2.0 + Math.abs(shake) * 0.4;
+                cz = interpolate(p, [0, 1], [7.2, 5.6]) + punchZ;
+                tx = 2.0;
+                ty = 1.3;
+                tz = -2.6;
+              } else if (act === 3) {
                 const p = (frame - 540) / 270;
-                cx = interpolate(p, [0, 1], [-5.5, 5.5]);
-                cy = 1.55 + Math.sin(frame * 0.25) * 0.08;
-                cz = 7.4;
-                tx = cx + 1.2;
-                ty = 1.1;
-                tz = -2.5;
-              } else {
-                // Scene 4: Sunset dramatic orbit pull-back
-                const p = (frame - 810) / 240;
-                const angle = interpolate(p, [0, 1], [-0.35, 0.45]);
-                const radius = interpolate(p, [0, 1], [8.5, 12.0]);
-                cx = Math.sin(angle) * radius;
-                cy = interpolate(p, [0, 1], [2.2, 4.2]);
-                cz = Math.cos(angle) * radius;
-                tx = 0.5;
+                cx = interpolate(p, [0, 1], [-5.2, 5.2]);
+                cy = 1.6 + Math.sin(frame * 0.25) * 0.08;
+                cz = 7.0 + punchZ;
+                tx = cx + 1.1;
                 ty = 1.2;
-                tz = -2.0;
+                tz = -2.2;
+              } else {
+                const p = (frame - 810) / 240;
+                const angle = interpolate(p, [0, 1], [-0.32, 0.42]);
+                const radius = interpolate(p, [0, 1], [8.0, 11.2]) + punchZ;
+                cx = Math.sin(angle) * radius;
+                cy = interpolate(p, [0, 1], [2.1, 3.8]);
+                cz = Math.cos(angle) * radius;
+                tx = 0.4;
+                ty = 1.25;
+                tz = -1.8;
               }
 
               camera.position.set(cx, cy, cz);
@@ -338,12 +447,12 @@ jobs:
 
           const WheatField3D: React.FC<{ frame: number }> = ({ frame }) => {
             const meshRef = useRef<THREE.InstancedMesh>(null);
-            const count = 420;
+            const count = 240;
             const dummy = useMemo(() => new THREE.Object3D(), []);
             const stalks = useMemo(() => Array.from({ length: count }, (_, i) => ({
               x: ((i * 97) % 240) / 10 - 12,
               z: -((i * 53) % 200) / 10 + 4,
-              h: 0.9 + (i % 5) * 0.25,
+              h: 0.95 + (i % 5) * 0.24,
               phase: i * 0.4
             })), []);
 
@@ -351,8 +460,7 @@ jobs:
               if (!meshRef.current) return;
               stalks.forEach((s, i) => {
                 dummy.position.set(s.x, s.h * 0.5, s.z);
-                dummy.rotation.z = Math.sin(frame * 0.09 + s.phase) * 0.22;
-                dummy.rotation.x = Math.cos(frame * 0.07 + s.phase) * 0.1;
+                dummy.rotation.z = Math.sin(frame * 0.1 + s.phase) * 0.24;
                 dummy.scale.set(0.09, s.h, 0.09);
                 dummy.updateMatrix();
                 meshRef.current!.setMatrixAt(i, dummy.matrix);
@@ -362,13 +470,13 @@ jobs:
 
             return (
               <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
-                <coneGeometry args={[0.5, 1, 5]} />
-                <meshToonMaterial color="#f0c14b" />
+                <coneGeometry args={[0.5, 1, 4]} />
+                <meshToonMaterial color="#f2c44e" />
               </instancedMesh>
             );
           };
 
-          const CharacterBillboard: React.FC<{ texture: THREE.Texture; position: [number, number, number]; scale?: number; flipX?: boolean }> = ({ texture, position, scale = 3.2, flipX = false }) => {
+          const CharacterBillboard: React.FC<{ texture: THREE.Texture; position: [number, number, number]; scale?: number; flipX?: boolean }> = ({ texture, position, scale = 3.4, flipX = false }) => {
             const meshRef = useRef<THREE.Mesh>(null);
             useFrame(({ camera }) => {
               if (meshRef.current) {
@@ -385,44 +493,55 @@ jobs:
 
           export const EmuWar: React.FC = () => {
             const frame = useCurrentFrame();
-            const { width, height } = useVideoConfig();
-            const scene = frame < 240 ? 1 : frame < 540 ? 2 : frame < 810 ? 3 : 4;
+            const { width, height, fps } = useVideoConfig();
+            const tSec = frame / fps;
 
-            const emuTexA = useMemo(() => createEmuTexture(frame * 0.35, scene === 2), [frame, scene]);
-            const emuTexB = useMemo(() => createEmuTexture(frame * 0.35 + 1.8, scene === 2), [frame, scene]);
-            const soldierTex = useMemo(() => createSoldierTexture(frame * 0.35, scene === 2, scene === 4), [frame, scene]);
+            const beatSegments = useMemo(() => extractBeatSegments(rawTimings), []);
+            const activeBeatIdx = useMemo(() => {
+              const idx = beatSegments.findIndex((s) => tSec >= s.start && tSec <= s.end);
+              return idx >= 0 ? idx : Math.min(beatSegments.length - 1, Math.floor((tSec / 35) * beatSegments.length));
+            }, [beatSegments, tSec]);
+            const activeBeat = beatSegments[activeBeatIdx] || { start: 0, end: 35, text: "" };
+            const beatStartFrame = Math.floor(activeBeat.start * fps);
 
-            let dynamicCaption = "";
-            const data: any = rawTimings;
-            const tSec = frame / 30;
-            if (Array.isArray(data?.word_timestamps?.words)) {
-              const words = data.word_timestamps.words.filter((w: any) => w.start <= tSec + 0.2 && w.end >= tSec - 1.8);
-              dynamicCaption = words.slice(-6).map((w: any) => w.word).join(" ");
-            } else if (Array.isArray(data?.segments)) {
-              const seg = data.segments.find((s: any) => tSec >= s.start && tSec <= s.end);
-              if (seg) dynamicCaption = seg.text;
-            }
+            const act = frame < 240 ? 1 : frame < 540 ? 2 : frame < 810 ? 3 : 4;
 
-            const titles: Record<number, { top: string; sub: string }> = {
-              1: { top: "1932: WESTERN AUSTRALIA", sub: "20,000 Emus Invade the Wheat Fields" },
-              2: { top: "ROYAL ARTILLERY DEPLOYS", sub: "Lewis Machine Guns vs. Flightless Birds" },
-              3: { top: "GUERRILLA EMU TACTICS", sub: "Splitting Into Squads at 50 km/h" },
-              4: { top: "VICTORY: THE EMUS", sub: "The Australian Army Retreats" },
-            };
+            const assets = useMemo(() => ({
+              dayBg: createPaintedBackdrop(false),
+              sunsetBg: createPaintedBackdrop(true),
+              emuRun: Array.from({ length: 8 }, (_, s) => createEmuTexture(s, "run")),
+              emuPanic: Array.from({ length: 8 }, (_, s) => createEmuTexture(s, "panic")),
+              emuSmug: Array.from({ length: 8 }, (_, s) => createEmuTexture(s, "smug")),
+              soldierAim: Array.from({ length: 8 }, (_, s) => createSoldierTexture(s, "aim")),
+              soldierFire: Array.from({ length: 8 }, (_, s) => createSoldierTexture(s, "fire")),
+              soldierRetreat: Array.from({ length: 8 }, (_, s) => createSoldierTexture(s, "retreat")),
+            }), []);
 
-            const emuX1 = interpolate(frame % 160, [0, 160], [-7.5, 7.5]);
-            const emuSplitZ = scene === 3 ? interpolate(frame, [540, 810], [-2.0, -7.5]) : -2.2;
-            const emuSplitZ2 = scene === 3 ? interpolate(frame, [540, 810], [-1.5, 2.5]) : -0.8;
-            const retreatX = scene === 4 ? interpolate(frame, [810, 1050], [-2.2, -9.5]) : -2.6;
+            const stepA = Math.floor(frame / 2) % 8;
+            const stepB = (stepA + 4) % 8;
+
+            const emuTexA = act === 2 ? assets.emuPanic[stepA] : act === 4 ? assets.emuSmug[stepA] : assets.emuRun[stepA];
+            const emuTexB = act === 2 ? assets.emuPanic[stepB] : act === 4 ? assets.emuSmug[stepB] : assets.emuRun[stepB];
+            const soldierTex = act === 4 ? assets.soldierRetreat[stepA] : (act === 2 && activeBeatIdx % 2 === 1) ? assets.soldierFire[stepA] : act === 2 ? assets.soldierFire[stepA] : assets.soldierAim[stepA];
+
+            const emuX1 = interpolate(frame % 150, [0, 150], [-7.5, 7.5]);
+            const emuSplitZ = act === 3 ? interpolate(frame, [540, 810], [-1.8, -7.2]) : -2.0;
+            const emuSplitZ2 = act === 3 ? interpolate(frame, [540, 810], [-1.2, 2.6]) : -0.6;
+            const retreatX = act === 4 ? interpolate(frame, [810, 1050], [-2.0, -9.8]) : -2.5;
 
             return (
-              <AbsoluteFill style={{ backgroundColor: scene === 4 ? "#e87a5d" : "#2f7ed8" }}>
-                <ThreeCanvas width={width} height={height} camera={{ fov: 45, near: 0.1, far: 100 }}>
-                  <CameraRig frame={frame} />
-                  <color attach="background" args={[scene === 4 ? "#f28b66" : "#4ea1f3"]} />
-                  <fog attach="fog" args={[scene === 4 ? "#fbc299" : "#9bd0ff", 10, 32]} />
-                  <ambientLight intensity={0.85} color="#fff6e0" />
-                  <directionalLight position={[8, 14, 6]} intensity={1.7} color="#ffe9b3" />
+              <AbsoluteFill style={{ backgroundColor: act === 4 ? "#d96b43" : "#1d5fa3" }}>
+                <ThreeCanvas width={width} height={height} camera={{ fov: 44, near: 0.1, far: 100 }}>
+                  <CameraRig frame={frame} fps={fps} beatIndex={activeBeatIdx} beatStartFrame={beatStartFrame} act={act} />
+                  <fog attach="fog" args={[act === 4 ? "#f7b267" : "#bfe3ff", 11, 34]} />
+                  <ambientLight intensity={0.9} color="#fff7e6" />
+                  <directionalLight position={[8, 14, 6]} intensity={1.6} color="#ffe9b3" />
+
+                  {/* Painted Sky & Mountain Backdrop Plane */}
+                  <mesh position={[0, 7.5, -24]}>
+                    <planeGeometry args={[56, 26]} />
+                    <meshBasicMaterial map={act === 4 ? assets.sunsetBg : assets.dayBg} />
+                  </mesh>
 
                   {/* 3D Golden Terrain */}
                   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -4]}>
@@ -430,21 +549,11 @@ jobs:
                     <meshToonMaterial color="#c98e2b" />
                   </mesh>
 
-                  {/* 3D Distant Painted Hills */}
-                  <mesh position={[-8, 1.2, -18]}>
-                    <sphereGeometry args={[7, 24, 16]} />
-                    <meshToonMaterial color="#5870a6" />
-                  </mesh>
-                  <mesh position={[7, 1.6, -20]}>
-                    <sphereGeometry args={[8.5, 24, 16]} />
-                    <meshToonMaterial color="#465c8f" />
-                  </mesh>
-
                   {/* 3D Wooden Fence Posts */}
                   {[-6, -3, 0, 3, 6].map((fx, i) => (
-                    <group key={i} position={[fx, 0.7, -5.5]}>
+                    <group key={i} position={[fx, 0.75, -5.5]}>
                       <mesh>
-                        <boxGeometry args={[0.18, 1.4, 0.18]} />
+                        <boxGeometry args={[0.18, 1.5, 0.18]} />
                         <meshToonMaterial color="#5e3c24" />
                       </mesh>
                       <mesh position={[1.5, 0.25, 0]}>
@@ -456,56 +565,49 @@ jobs:
 
                   <WheatField3D frame={frame} />
 
-                  {/* Characters in 3D Space */}
-                  {scene === 1 && (
+                  {/* Act 1: Emu Herd Invading */}
+                  {act === 1 && (
                     <>
-                      <CharacterBillboard texture={emuTexA} position={[emuX1, 1.55, -2.0]} scale={3.3} />
-                      <CharacterBillboard texture={emuTexB} position={[emuX1 - 2.4, 1.5, -3.5]} scale={3.1} />
-                      <CharacterBillboard texture={emuTexA} position={[emuX1 - 4.2, 1.6, -0.8]} scale={3.5} />
+                      <CharacterBillboard texture={emuTexA} position={[emuX1, 1.65, -2.0]} scale={3.5} />
+                      <CharacterBillboard texture={emuTexB} position={[emuX1 - 2.4, 1.6, -3.5]} scale={3.3} />
+                      <CharacterBillboard texture={emuTexA} position={[emuX1 - 4.4, 1.7, -0.8]} scale={3.7} />
                     </>
                   )}
 
-                  {scene === 2 && (
+                  {/* Act 2: Royal Artillery Lewis Gun Ambush */}
+                  {act === 2 && (
                     <>
-                      <CharacterBillboard texture={soldierTex} position={[-2.6, 1.55, 1.2]} scale={3.4} />
-                      <CharacterBillboard texture={soldierTex} position={[-1.4, 1.55, -1.2]} scale={3.2} />
-                      <CharacterBillboard texture={emuTexA} position={[3.6, 1.55, -1.5]} scale={3.3} flipX />
-                      <CharacterBillboard texture={emuTexB} position={[5.2, 1.55, -3.4]} scale={3.2} flipX />
+                      <CharacterBillboard texture={soldierTex} position={[-2.5, 1.65, 1.2]} scale={3.6} />
+                      <CharacterBillboard texture={soldierTex} position={[-1.2, 1.65, -1.2]} scale={3.4} />
+                      <CharacterBillboard texture={emuTexA} position={[3.5, 1.65, -1.5]} scale={3.5} flipX />
+                      <CharacterBillboard texture={emuTexB} position={[5.1, 1.65, -3.4]} scale={3.4} flipX />
                     </>
                   )}
 
-                  {scene === 3 && (
+                  {/* Act 3: Guerrilla Split Tactics */}
+                  {act === 3 && (
                     <>
-                      <CharacterBillboard texture={emuTexA} position={[emuX1, 1.55, emuSplitZ]} scale={3.2} />
-                      <CharacterBillboard texture={emuTexB} position={[emuX1 - 2.0, 1.55, emuSplitZ2]} scale={3.5} />
-                      <CharacterBillboard texture={emuTexA} position={[emuX1 - 3.8, 1.55, -2.4]} scale={3.3} />
+                      <CharacterBillboard texture={emuTexA} position={[emuX1, 1.65, emuSplitZ]} scale={3.4} />
+                      <CharacterBillboard texture={emuTexB} position={[emuX1 - 2.0, 1.65, emuSplitZ2]} scale={3.7} />
+                      <CharacterBillboard texture={emuTexA} position={[emuX1 - 3.8, 1.65, -2.4]} scale={3.5} />
                     </>
                   )}
 
-                  {scene === 4 && (
+                  {/* Act 4: Army Retreats, Emus Triumph */}
+                  {act === 4 && (
                     <>
-                      <CharacterBillboard texture={soldierTex} position={[retreatX, 1.55, 0.5]} scale={3.3} />
-                      <CharacterBillboard texture={emuTexA} position={[2.2, 1.6, -1.2]} scale={3.5} flipX />
-                      <CharacterBillboard texture={emuTexB} position={[4.2, 1.6, -2.8]} scale={3.4} flipX />
+                      <CharacterBillboard texture={soldierTex} position={[retreatX, 1.65, 0.5]} scale={3.5} />
+                      <CharacterBillboard texture={emuTexA} position={[2.0, 1.7, -1.2]} scale={3.7} flipX />
+                      <CharacterBillboard texture={emuTexB} position={[4.0, 1.7, -2.8]} scale={3.6} flipX />
                     </>
                   )}
                 </ThreeCanvas>
 
-                {/* Top Banner */}
-                <div style={{ position: "absolute", top: 130, width: "100%", textAlign: "center", padding: "0 40px", fontFamily: "sans-serif" }}>
-                  <div style={{ display: "inline-block", background: "#241726", color: "#ffd54f", padding: "14px 32px", borderRadius: 20, fontSize: 38, fontWeight: 900, letterSpacing: 2, boxShadow: "0 8px 20px rgba(0,0,0,0.4)" }}>
-                    {titles[scene].top}
-                  </div>
-                  <div style={{ marginTop: 16, color: "#ffffff", fontSize: 32, fontWeight: 800, textShadow: "0 3px 12px #241726" }}>
-                    {titles[scene].sub}
-                  </div>
-                </div>
-
-                {/* Live Synced Captions */}
-                {dynamicCaption && (
-                  <div style={{ position: "absolute", bottom: 220, width: "100%", textAlign: "center", padding: "0 50px", fontFamily: "sans-serif" }}>
-                    <span style={{ background: "rgba(36, 23, 38, 0.88)", color: "#ffffff", padding: "14px 28px", borderRadius: 16, fontSize: 40, fontWeight: 900, lineHeight: 1.4 }}>
-                      {dynamicCaption}
+                {/* Clean Beat-Synced Subtitles from JSON */}
+                {activeBeat.text && (
+                  <div style={{ position: "absolute", bottom: 200, width: "100%", textAlign: "center", padding: "0 48px", fontFamily: "sans-serif" }}>
+                    <span style={{ background: "rgba(36, 23, 38, 0.88)", color: "#ffffff", padding: "14px 28px", borderRadius: 18, fontSize: 40, fontWeight: 900, lineHeight: 1.4, boxShadow: "0 6px 20px rgba(0,0,0,0.45)" }}>
+                      {activeBeat.text}
                     </span>
                   </div>
                 )}
@@ -517,7 +619,7 @@ jobs:
           EOF
 
       - name: Render Video
-        run: npx remotion render src/index.ts EmuWar final_emu_war.mp4 --gl=swiftshader --concurrency=2 --crf=22
+        run: npx remotion render src/index.ts EmuWar final_emu_war.mp4 --gl=swiftshader --concurrency=2 --crf=23
       - name: Upload Video
         uses: actions/upload-artifact@v4
         with:
