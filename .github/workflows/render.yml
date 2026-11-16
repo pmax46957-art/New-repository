@@ -12,20 +12,24 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2
-      - name: Install Remotion & 3D Engine
+      - name: Install Remotion
         run: |
           npm init -y
-          npm install remotion@4.0.234 @remotion/cli@4.0.234 @remotion/three@4.0.234 three @types/three @react-three/fiber@8.17.10 @react-three/drei@9.114.3 react@18.3.1 react-dom@18.3.1
-      - name: Build 3D-2D Animation Files
+          npm install remotion@4.0.234 @remotion/cli@4.0.234 react@18.3.1 react-dom@18.3.1
+      - name: Build Stylized 2D-3D Hybrid Scenes
         run: |
           mkdir -p public src
           AUDIO=$(ls *.mp3 *.wav *.m4a 2>/dev/null | head -n 1)
           if [ -n "$AUDIO" ]; then cp "$AUDIO" public/voice.mp3; fi
+          JSONF=$(ls *.json 2>/dev/null | grep -v "package" | head -n 1)
+          if [ -n "$JSONF" ]; then cp "$JSONF" src/timings.json; else echo "{}" > src/timings.json; fi
+
           cat << 'EOF' > src/index.ts
           import { registerRoot } from "remotion";
           import { Root } from "./Root";
           registerRoot(Root);
           EOF
+
           cat << 'EOF' > src/Root.tsx
           import React from "react";
           import { Composition } from "remotion";
@@ -34,133 +38,227 @@ jobs:
             <Composition id="EmuWar" component={EmuWar} durationInFrames={1050} fps={30} width={1080} height={1920} />
           );
           EOF
-          cat << 'EOF' > src/EmuWar.tsx
-          import React, { useRef, useMemo } from "react";
-          import { AbsoluteFill, Audio, staticFile, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
-          import { ThreeCanvas } from "@remotion/three";
-          import * as THREE from "three";
 
-          const WheatField: React.FC<{ frame: number }> = ({ frame }) => {
-            const meshRef = useRef<THREE.InstancedMesh>(null);
-            const count = 400;
-            const dummy = useMemo(() => new THREE.Object3D(), []);
-            const positions = useMemo(() => Array.from({ length: count }, (_, i) => ({
-              x: ((i * 73) % 100) / 5 - 10,
-              z: -((i * 37) % 100) / 4 - 1,
-              h: 0.85 + (i % 5) * 0.25,
-              phase: i * 0.5
-            })), []);
-            React.useEffect(() => {
-              if (!meshRef.current) return;
-              positions.forEach((p, i) => {
-                dummy.position.set(p.x, p.h / 2 - 1.5, p.z);
-                dummy.rotation.z = Math.sin(frame * 0.08 + p.phase) * 0.2;
-                dummy.scale.set(0.08, p.h, 0.08);
-                dummy.updateMatrix();
-                meshRef.current!.setMatrixAt(i, dummy.matrix);
-              });
-              meshRef.current.instanceMatrix.needsUpdate = true;
-            }, [frame, dummy, positions]);
+          cat << 'EOF' > src/EmuWar.tsx
+          import React from "react";
+          import { AbsoluteFill, Audio, staticFile, useCurrentFrame, interpolate } from "remotion";
+          import rawTimings from "./timings.json";
+
+          const EmuSVG: React.FC<{ x: number; y: number; scale: number; frame: number; offset: number; flip?: boolean }> = ({ x, y, scale, frame, offset, flip = false }) => {
+            const f = frame + offset;
+            const bounce = Math.abs(Math.sin(f * 0.28)) * 22;
+            const legA = Math.sin(f * 0.28) * 32;
+            const legB = -Math.sin(f * 0.28) * 32;
+            const neckTilt = Math.sin(f * 0.28) * 8;
             return (
-              <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
-                <coneGeometry args={[0.5, 1, 5]} />
-                <meshToonMaterial color="#e8b948" />
-              </instancedMesh>
+              <g transform={`translate(${x}, ${y - bounce}) scale(${flip ? -scale : scale}, ${scale})`}>
+                {/* Shadow */}
+                <ellipse cx="0" cy="145" rx="58" ry="14" fill="rgba(36, 23, 38, 0.28)" />
+                {/* Back Leg */}
+                <g transform={`translate(-10, 65) rotate(${legB})`}>
+                  <path d="M0,0 L-10,45 L10,80 M10,80 L28,80" stroke="#241726" strokeWidth="11" strokeLinecap="round" fill="none" />
+                  <path d="M0,0 L-10,45 L10,80 M10,80 L28,80" stroke="#e09132" strokeWidth="5" strokeLinecap="round" fill="none" />
+                </g>
+                {/* Plum-Outlined Feathered Bean Body */}
+                <ellipse cx="0" cy="20" rx="68" ry="52" fill="#5c4738" stroke="#241726" strokeWidth="9" />
+                <path d="M-45,10 Q-10,-15 35,5 Q15,40 -40,32 Z" fill="#785e4c" />
+                {/* Tail Feathers */}
+                <path d="M-62,15 L-92,-5 L-82,18 L-96,32 L-60,35 Z" fill="#47362b" stroke="#241726" strokeWidth="7" strokeLinejoin="round" />
+                {/* Long Neck & Bean Head */}
+                <g transform={`translate(42, -5) rotate(${neckTilt})`}>
+                  <path d="M0,10 Q18,-45 10,-95" stroke="#241726" strokeWidth="26" strokeLinecap="round" fill="none" />
+                  <path d="M0,10 Q18,-45 10,-95" stroke="#6e7f91" strokeWidth="14" strokeLinecap="round" fill="none" />
+                  <ellipse cx="14" cy="-102" rx="28" ry="24" fill="#5c4738" stroke="#241726" strokeWidth="8" />
+                  {/* Beak */}
+                  <polygon points="38,-106 72,-96 38,-88" fill="#f5a623" stroke="#241726" strokeWidth="6" strokeLinejoin="round" />
+                  {/* Expressive Eye */}
+                  <circle cx="22" cy="-106" r="9" fill="#ffffff" stroke="#241726" strokeWidth="4" />
+                  <circle cx="25" cy="-106" r="4" fill="#241726" />
+                </g>
+                {/* Front Leg */}
+                <g transform={`translate(12, 65) rotate(${legA})`}>
+                  <path d="M0,0 L-10,45 L10,80 M10,80 L28,80" stroke="#241726" strokeWidth="11" strokeLinecap="round" fill="none" />
+                  <path d="M0,0 L-10,45 L10,80 M10,80 L28,80" stroke="#f5a623" strokeWidth="5" strokeLinecap="round" fill="none" />
+                </g>
+              </g>
             );
           };
 
-          const BeanCharacter: React.FC<{ x: number; y: number; z: number; color: string; hatColor: string; flip?: boolean; frame: number; offset?: number; isEmu?: boolean }> = ({ x, y, z, color, hatColor, flip = false, frame, offset = 0, isEmu = false }) => {
-            const bounce = Math.abs(Math.sin((frame + offset) * 0.24)) * 0.28;
-            const tilt = Math.sin((frame + offset) * 0.24) * 0.14;
+          const SoldierSVG: React.FC<{ x: number; y: number; scale: number; frame: number; firing: boolean; retreating: boolean }> = ({ x, y, scale, frame, firing, retreating }) => {
+            const recoil = firing ? Math.abs(Math.sin(frame * 1.4)) * 10 : 0;
+            const runBounce = retreating ? Math.abs(Math.sin(frame * 0.3)) * 18 : 0;
+            const legSwing = retreating ? Math.sin(frame * 0.3) * 28 : 0;
             return (
-              <group position={[x, y + bounce, z]} rotation={[0, flip ? Math.PI : 0, tilt]}>
-                <mesh position={[0, 0, -0.02]} scale={[1.13, 1.09, 1]}>
-                  <capsuleGeometry args={[0.42, isEmu ? 0.85 : 0.65, 8, 16]} />
-                  <meshBasicMaterial color="#241726" />
-                </mesh>
-                <mesh>
-                  <capsuleGeometry args={[0.38, isEmu ? 0.8 : 0.6, 8, 16]} />
-                  <meshBasicMaterial color={color} />
-                </mesh>
-                {isEmu ? (
-                  <mesh position={[0.45, 0.45, 0.02]} rotation={[0, 0, -0.3]}>
-                    <coneGeometry args={[0.14, 0.35, 8]} />
-                    <meshBasicMaterial color="#f5a623" />
-                  </mesh>
-                ) : (
-                  <mesh position={[0.05, 0.62, 0.02]}>
-                    <boxGeometry args={[0.72, 0.14, 0.2]} />
-                    <meshBasicMaterial color={hatColor} />
-                  </mesh>
+              <g transform={`translate(${x - recoil}, ${y - runBounce}) scale(${retreating ? -scale : scale}, ${scale})`}>
+                <ellipse cx="0" cy="145" rx="52" ry="13" fill="rgba(36, 23, 38, 0.3)" />
+                {/* Legs */}
+                <line x1="-14" y1="75" x2={-14 - legSwing} y2="140" stroke="#241726" strokeWidth="16" strokeLinecap="round" />
+                <line x1="14" y1="75" x2={14 + legSwing} y2="140" stroke="#241726" strokeWidth="16" strokeLinecap="round" />
+                {/* Bean Torso & Head */}
+                <rect x="-42" y="-55" width="84" height="140" rx="42" fill="#6b7a4f" stroke="#241726" strokeWidth="9" />
+                <path d="M-38,25 L38,25 L38,55 Q0,68 -38,55 Z" fill="#55613e" stroke="#241726" strokeWidth="7" />
+                {/* Face */}
+                <circle cx="18" cy="-18" r="10" fill="#ffffff" stroke="#241726" strokeWidth="4" />
+                <circle cx="21" cy="-18" r="4.5" fill="#241726" />
+                {/* Australian Slouch Hat */}
+                <ellipse cx="0" cy="-52" rx="64" ry="13" fill="#4a5436" stroke="#241726" strokeWidth="8" />
+                <path d="M-34,-52 Q0,-88 34,-52 Z" fill="#5c6b43" stroke="#241726" strokeWidth="8" />
+                {/* Lewis Machine Gun */}
+                {!retreating && (
+                  <g transform="translate(25, 25)">
+                    <line x1="35" y1="15" x2="15" y2="115" stroke="#241726" strokeWidth="9" strokeLinecap="round" />
+                    <line x1="35" y1="15" x2="55" y2="115" stroke="#241726" strokeWidth="9" strokeLinecap="round" />
+                    <rect x="-15" y="-6" width="85" height="22" rx="8" fill="#3a3f47" stroke="#241726" strokeWidth="7" />
+                    <ellipse cx="22" cy="-10" rx="22" ry="7" fill="#5a626e" stroke="#241726" strokeWidth="6" />
+                    {firing && frame % 4 < 2 && (
+                      <polygon points="75,-18 125,5 75,26 92,5" fill="#ffd54f" stroke="#ff6f00" strokeWidth="4" />
+                    )}
+                  </g>
                 )}
-                <mesh position={[0.22, isEmu ? 0.48 : 0.28, 0.36]}>
-                  <sphereGeometry args={[0.08, 12, 12]} />
-                  <meshBasicMaterial color="#ffffff" />
-                </mesh>
-                <mesh position={[0.25, isEmu ? 0.48 : 0.28, 0.42]}>
-                  <sphereGeometry args={[0.04, 12, 12]} />
-                  <meshBasicMaterial color="#241726" />
-                </mesh>
-              </group>
+              </g>
             );
           };
 
           export const EmuWar: React.FC = () => {
             const frame = useCurrentFrame();
-            const { width, height } = useVideoConfig();
-            const isImpact = (frame >= 240 && frame <= 247) || (frame >= 540 && frame <= 547) || (frame >= 810 && frame <= 817);
-            const shakeX = isImpact ? Math.sin(frame * 3.5) * 0.28 : 0;
-            const zoom = interpolate(frame, [0, 1050], [6.6, 4.7]);
-            const emuRunX = interpolate(frame % 160, [0, 160], [-4.8, 4.8]);
-            const soldierX = frame > 810 ? interpolate(frame, [810, 1050], [-1.2, -5.5]) : -1.2;
-            const scenes = [
-              { start: 0, end: 240, title: "1932: WESTERN AUSTRALIA", sub: "20,000 Emus Invade the Wheat Fields" },
-              { start: 240, end: 540, title: "ROYAL ARTILLERY DEPLOYS", sub: "Lewis Machine Guns vs. Flightless Birds" },
-              { start: 540, end: 810, title: "GUERRILLA EMU TACTICS", sub: "Splitting Into Squads at 50 km/h" },
-              { start: 810, end: 1050, title: "VICTORY: THE EMUS", sub: "The Australian Army Retreats" }
-            ];
-            const active = scenes.find(s => frame >= s.start && frame < s.end) || scenes[0];
+            const scene = frame < 240 ? 1 : frame < 540 ? 2 : frame < 810 ? 3 : 4;
+            const shakeX = (scene === 2 && frame % 6 < 3) ? 8 : 0;
+            const shakeY = (scene === 2 && frame % 6 < 3) ? -6 : 0;
+            const bgShift = interpolate(frame, [0, 1050], [0, -350]);
+
+            // Parse uploaded Cartesia/Whisper JSON captions if present
+            let dynamicCaption = "";
+            const data: any = rawTimings;
+            const tSec = frame / 30;
+            if (Array.isArray(data?.word_timestamps?.words)) {
+              const words = data.word_timestamps.words.filter((w: any) => w.start <= tSec + 0.2 && w.end >= tSec - 1.8);
+              dynamicCaption = words.slice(-6).map((w: any) => w.word).join(" ");
+            } else if (Array.isArray(data?.segments)) {
+              const seg = data.segments.find((s: any) => tSec >= s.start && tSec <= s.end);
+              if (seg) dynamicCaption = seg.text;
+            }
+
+            const titles: Record<number, { top: string; sub: string }> = {
+              1: { top: "1932: WESTERN AUSTRALIA", sub: "20,000 Emus Invade the Wheat Fields" },
+              2: { top: "ROYAL ARTILLERY DEPLOYS", sub: "Machine Guns vs. Flightless Birds" },
+              3: { top: "GUERRILLA EMU TACTICS", sub: "Splitting Into Squads at 50 km/h" },
+              4: { top: "VICTORY: THE EMUS", sub: "The Australian Army Retreats" },
+            };
+
+            const emuChargeX = interpolate(frame % 150, [0, 150], [-180, 1260]);
+            const emuSplitTop = interpolate(frame, [540, 810], [1150, 960]);
+            const emuSplitBot = interpolate(frame, [540, 810], [1250, 1480]);
+            const soldierX = scene === 4 ? interpolate(frame, [810, 1050], [260, -250]) : 240;
+
             return (
-              <AbsoluteFill style={{ backgroundColor: "#2a75c7" }}>
-                <ThreeCanvas width={width} height={height} camera={{ position: [shakeX, 1.2, zoom], fov: 42 }}>
-                  <color attach="background" args={["#3c8ce7"]} />
-                  <fog attach="fog" args={["#89c4f4", 6, 22]} />
-                  <ambientLight intensity={0.75} color="#b8c6ff" />
-                  <directionalLight position={[5, 10, 4]} intensity={1.8} color="#fff1c1" />
-                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, -5]}>
-                    <planeGeometry args={[40, 40]} />
-                    <meshToonMaterial color="#c9933b" />
-                  </mesh>
-                  <mesh position={[-4, -0.6, -12]}>
-                    <sphereGeometry args={[5, 24, 16]} />
-                    <meshToonMaterial color="#5d6e9e" />
-                  </mesh>
-                  <mesh position={[5, -0.4, -14]}>
-                    <sphereGeometry args={[6.5, 24, 16]} />
-                    <meshToonMaterial color="#4b5a87" />
-                  </mesh>
-                  <WheatField frame={frame} />
-                  <BeanCharacter x={soldierX} y={-0.6} z={0.5} color="#5c6b43" hatColor="#3e472c" flip={frame > 810} frame={frame} offset={0} />
-                  <BeanCharacter x={soldierX + 0.9} y={-0.6} z={0.2} color="#6b7a4f" hatColor="#3e472c" flip={frame > 810} frame={frame} offset={10} />
-                  <BeanCharacter x={emuRunX} y={-0.4} z={-1.2} color="#4a3b32" hatColor="#241726" frame={frame} offset={5} isEmu />
-                  <BeanCharacter x={emuRunX - 1.3} y={-0.4} z={-1.8} color="#59473c" hatColor="#241726" frame={frame} offset={14} isEmu />
-                  <BeanCharacter x={emuRunX - 2.5} y={-0.4} z={-0.8} color="#3d3028" hatColor="#241726" frame={frame} offset={22} isEmu />
-                </ThreeCanvas>
-                <div style={{ position: "absolute", top: 150, width: "100%", textAlign: "center", padding: "0 40px", fontFamily: "sans-serif" }}>
-                  <div style={{ display: "inline-block", background: "#241726", color: "#ffd54f", padding: "14px 30px", borderRadius: 18, fontSize: 38, fontWeight: 900, letterSpacing: 2 }}>
-                    {active.title}
+              <AbsoluteFill style={{ backgroundColor: "#3c8ce7" }}>
+                <svg viewBox="0 0 1080 1920" width="1080" height="1920" style={{ transform: `translate(${shakeX}px, ${shakeY}px)` }}>
+                  <defs>
+                    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={scene === 4 ? "#ff7e5f" : "#2565ae"} />
+                      <stop offset="65%" stopColor={scene === 4 ? "#feb47b" : "#6dd5fa"} />
+                      <stop offset="100%" stopColor="#fff3b0" />
+                    </linearGradient>
+                    <linearGradient id="wheatGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#f5c84c" />
+                      <stop offset="100%" stopColor="#b87b1e" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Painted Sky */}
+                  <rect width="1080" height="1920" fill="url(#skyGrad)" />
+                  <circle cx="840" cy={scene === 4 ? "760" : "420"} r="110" fill="#fff5c0" opacity="0.85" />
+
+                  {/* 3D Layered Distant Blue Hills */}
+                  <g transform={`translate(${bgShift * 0.3}, 0)`}>
+                    <path d="M-100,920 Q220,680 560,880 T1250,820 L1500,1200 L-100,1200 Z" fill="#5d76a8" />
+                    <path d="M-100,980 Q380,760 780,940 T1500,890 L1500,1250 L-100,1250 Z" fill="#465c8a" />
+                  </g>
+
+                  {/* Painted 3D Golden Wheat Field */}
+                  <rect x="0" y="960" width="1080" height="960" fill="url(#wheatGrad)" />
+                  {/* Swaying Wheat Stalks */}
+                  <g transform={`translate(${bgShift}, 0)`}>
+                    {Array.from({ length: 45 }).map((_, i) => {
+                      const wx = i * 36;
+                      const wy = 990 + (i % 7) * 115;
+                      const sway = Math.sin(frame * 0.1 + i) * 12;
+                      return (
+                        <g key={i} transform={`translate(${wx}, ${wy})`}>
+                          <path d={`M0,60 Q${sway},25 ${sway * 1.5},0`} stroke="#d4942a" strokeWidth="6" fill="none" />
+                          <ellipse cx={sway * 1.5} cy="-8" rx="6" ry="16" fill="#ffe07d" />
+                        </g>
+                      );
+                    })}
+                  </g>
+
+                  {/* SCENE 1: Emu Invasion */}
+                  {scene === 1 && (
+                    <>
+                      <EmuSVG x={emuChargeX} y={1140} scale={1.15} frame={frame} offset={0} />
+                      <EmuSVG x={emuChargeX - 240} y={1280} scale={1.35} frame={frame} offset={12} />
+                      <EmuSVG x={emuChargeX - 480} y={1180} scale={1.05} frame={frame} offset={24} />
+                    </>
+                  )}
+
+                  {/* SCENE 2: Soldiers Firing Machine Guns */}
+                  {scene === 2 && (
+                    <>
+                      <SoldierSVG x={230} y={1230} scale={1.25} frame={frame} firing={true} retreating={false} />
+                      <SoldierSVG x={430} y={1360} scale={1.35} frame={frame + 4} firing={true} retreating={false} />
+                      <EmuSVG x={880 + Math.sin(frame * 0.2) * 40} y={1160} scale={1.0} frame={frame} offset={5} flip={true} />
+                      <EmuSVG x={960 + Math.cos(frame * 0.2) * 40} y={1320} scale={1.15} frame={frame} offset={15} flip={true} />
+                    </>
+                  )}
+
+                  {/* SCENE 3: Guerrilla Emu Split Tactics */}
+                  {scene === 3 && (
+                    <>
+                      <EmuSVG x={emuChargeX} y={emuSplitTop} scale={1.05} frame={frame} offset={3} />
+                      <EmuSVG x={emuChargeX - 220} y={emuSplitTop - 40} scale={0.95} frame={frame} offset={11} />
+                      <EmuSVG x={emuChargeX - 100} y={emuSplitBot} scale={1.4} frame={frame} offset={19} />
+                      {/* Dust Clouds */}
+                      <circle cx={emuChargeX - 120} cy={emuSplitBot + 120} r={35 + (frame % 15) * 2} fill="#fff3d1" opacity="0.55" />
+                    </>
+                  )}
+
+                  {/* SCENE 4: Emus Win, Soldiers Retreat */}
+                  {scene === 4 && (
+                    <>
+                      <SoldierSVG x={soldierX} y={1320} scale={1.2} frame={frame} firing={false} retreating={true} />
+                      <EmuSVG x={660} y={1160} scale={1.35} frame={frame} offset={0} flip={true} />
+                      <EmuSVG x={860} y={1260} scale={1.45} frame={frame} offset={10} flip={true} />
+                    </>
+                  )}
+                </svg>
+
+                {/* Top Banner */}
+                <div style={{ position: "absolute", top: 130, width: "100%", textAlign: "center", padding: "0 40px", fontFamily: "sans-serif" }}>
+                  <div style={{ display: "inline-block", background: "#241726", color: "#ffd54f", padding: "14px 32px", borderRadius: 20, fontSize: 38, fontWeight: 900, letterSpacing: 2, boxShadow: "0 8px 20px rgba(0,0,0,0.4)" }}>
+                    {titles[scene].top}
                   </div>
-                  <div style={{ marginTop: 18, color: "#ffffff", fontSize: 32, fontWeight: 700, textShadow: "0 3px 10px #241726" }}>
-                    {active.sub}
+                  <div style={{ marginTop: 16, color: "#ffffff", fontSize: 32, fontWeight: 800, textShadow: "0 3px 12px #241726" }}>
+                    {titles[scene].sub}
                   </div>
                 </div>
+
+                {/* Live Synced Captions from JSON */}
+                {dynamicCaption && (
+                  <div style={{ position: "absolute", bottom: 220, width: "100%", textAlign: "center", padding: "0 50px", fontFamily: "sans-serif" }}>
+                    <span style={{ background: "rgba(36, 23, 38, 0.88)", color: "#ffffff", padding: "14px 28px", borderRadius: 16, fontSize: 40, fontWeight: 900, lineHeight: 1.4, boxShadow: "0 6px 18px rgba(0,0,0,0.45)" }}>
+                      {dynamicCaption}
+                    </span>
+                  </div>
+                )}
+
                 <Audio src={staticFile("voice.mp3")} />
               </AbsoluteFill>
             );
           };
           EOF
+
       - name: Render Video
-        run: npx remotion render src/index.ts EmuWar final_emu_war.mp4 --gl=angle
+        run: npx remotion render src/index.ts EmuWar final_emu_war.mp4 --concurrency=2 --crf=22
       - name: Upload Video
         uses: actions/upload-artifact@v4
         with:
