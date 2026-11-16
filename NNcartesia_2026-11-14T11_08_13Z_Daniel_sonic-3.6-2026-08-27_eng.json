@@ -1,0 +1,941 @@
+{
+  "language_code": "eng",
+  "segments": [
+    {
+      "text": "In 1932, Australia went to war with birds. About 20,000 emus were flattening the wheat fields of Western Australia, and desperate farmers, many of them war veterans, asked for machine guns. So the army sent two soldiers, two Lewis guns, and 10,000 rounds. The plan was simple. The emus had a different one. They split into small groups and scattered across the countryside. The soldiers fired. The emus kept running. After five weeks, the army reported 986 emus down and the wheat still being eaten. The army went home. The emus did not.",
+      "start_time": 0.14,
+      "end_time": 34.86,
+      "speaker": {
+        "id": "speaker_0",
+        "name": "Speaker 0"
+      },
+      "words": [
+        {
+          "text": "In",
+          "start_time": 0.14,
+          "end_time": 0.22
+        },
+        {
+          "text": " ",
+          "start_time": 0.22,
+          "end_time": 0.24
+        },
+        {
+          "text": "1932,",
+          "start_time": 0.24,
+          "end_time": 1.26
+        },
+        {
+          "text": " ",
+          "start_time": 1.26,
+          "end_time": 1.52
+        },
+        {
+          "text": "Australia",
+          "start_time": 1.52,
+          "end_time": 2.0
+        },
+        {
+          "text": " ",
+          "start_time": 2.0,
+          "end_time": 2.04
+        },
+        {
+          "text": "went",
+          "start_time": 2.04,
+          "end_time": 2.18
+        },
+        {
+          "text": " ",
+          "start_time": 2.18,
+          "end_time": 2.22
+        },
+        {
+          "text": "to",
+          "start_time": 2.22,
+          "end_time": 2.34
+        },
+        {
+          "text": " ",
+          "start_time": 2.34,
+          "end_time": 2.38
+        },
+        {
+          "text": "war",
+          "start_time": 2.38,
+          "end_time": 2.56
+        },
+        {
+          "text": " ",
+          "start_time": 2.56,
+          "end_time": 2.6
+        },
+        {
+          "text": "with",
+          "start_time": 2.6,
+          "end_time": 2.74
+        },
+        {
+          "text": " ",
+          "start_time": 2.74,
+          "end_time": 2.78
+        },
+        {
+          "text": "birds.",
+          "start_time": 2.78,
+          "end_time": 3.18
+        },
+        {
+          "text": " ",
+          "start_time": 3.18,
+          "end_time": 3.66
+        },
+        {
+          "text": "About",
+          "start_time": 3.66,
+          "end_time": 3.84
+        },
+        {
+          "text": " ",
+          "start_time": 3.84,
+          "end_time": 4.04
+        },
+        {
+          "text": "20,000",
+          "start_time": 4.04,
+          "end_time": 4.6
+        },
+        {
+          "text": " ",
+          "start_time": 4.6,
+          "end_time": 4.66
+        },
+        {
+          "text": "emus",
+          "start_time": 4.66,
+          "end_time": 5.04
+        },
+        {
+          "text": " ",
+          "start_time": 5.04,
+          "end_time": 5.06
+        },
+        {
+          "text": "were",
+          "start_time": 5.06,
+          "end_time": 5.2
+        },
+        {
+          "text": " ",
+          "start_time": 5.2,
+          "end_time": 5.26
+        },
+        {
+          "text": "flattening",
+          "start_time": 5.26,
+          "end_time": 5.64
+        },
+        {
+          "text": " ",
+          "start_time": 5.64,
+          "end_time": 5.68
+        },
+        {
+          "text": "the",
+          "start_time": 5.68,
+          "end_time": 5.76
+        },
+        {
+          "text": " ",
+          "start_time": 5.76,
+          "end_time": 5.78
+        },
+        {
+          "text": "wheat",
+          "start_time": 5.78,
+          "end_time": 5.94
+        },
+        {
+          "text": " ",
+          "start_time": 5.94,
+          "end_time": 6.04
+        },
+        {
+          "text": "fields",
+          "start_time": 6.04,
+          "end_time": 6.3
+        },
+        {
+          "text": " ",
+          "start_time": 6.3,
+          "end_time": 6.34
+        },
+        {
+          "text": "of",
+          "start_time": 6.34,
+          "end_time": 6.4
+        },
+        {
+          "text": " ",
+          "start_time": 6.4,
+          "end_time": 6.44
+        },
+        {
+          "text": "Western",
+          "start_time": 6.44,
+          "end_time": 6.72
+        },
+        {
+          "text": " ",
+          "start_time": 6.72,
+          "end_time": 6.76
+        },
+        {
+          "text": "Australia,",
+          "start_time": 6.76,
+          "end_time": 7.26
+        },
+        {
+          "text": " ",
+          "start_time": 7.26,
+          "end_time": 7.28
+        },
+        {
+          "text": "and",
+          "start_time": 7.78,
+          "end_time": 7.92
+        },
+        {
+          "text": " ",
+          "start_time": 7.92,
+          "end_time": 7.96
+        },
+        {
+          "text": "desperate",
+          "start_time": 7.96,
+          "end_time": 8.3
+        },
+        {
+          "text": " ",
+          "start_time": 8.3,
+          "end_time": 8.4
+        },
+        {
+          "text": "farmers,",
+          "start_time": 8.4,
+          "end_time": 8.88
+        },
+        {
+          "text": " ",
+          "start_time": 8.88,
+          "end_time": 9.18
+        },
+        {
+          "text": "many",
+          "start_time": 9.18,
+          "end_time": 9.34
+        },
+        {
+          "text": " ",
+          "start_time": 9.34,
+          "end_time": 9.38
+        },
+        {
+          "text": "of",
+          "start_time": 9.38,
+          "end_time": 9.44
+        },
+        {
+          "text": " ",
+          "start_time": 9.44,
+          "end_time": 9.48
+        },
+        {
+          "text": "them",
+          "start_time": 9.48,
+          "end_time": 9.62
+        },
+        {
+          "text": " ",
+          "start_time": 9.62,
+          "end_time": 9.66
+        },
+        {
+          "text": "war",
+          "start_time": 9.66,
+          "end_time": 9.8
+        },
+        {
+          "text": " ",
+          "start_time": 9.8,
+          "end_time": 9.88
+        },
+        {
+          "text": "veterans,",
+          "start_time": 9.88,
+          "end_time": 10.28
+        },
+        {
+          "text": " ",
+          "start_time": 10.28,
+          "end_time": 10.72
+        },
+        {
+          "text": "asked",
+          "start_time": 10.72,
+          "end_time": 10.9
+        },
+        {
+          "text": " ",
+          "start_time": 10.9,
+          "end_time": 10.94
+        },
+        {
+          "text": "for",
+          "start_time": 10.94,
+          "end_time": 11.02
+        },
+        {
+          "text": " ",
+          "start_time": 11.02,
+          "end_time": 11.04
+        },
+        {
+          "text": "machine",
+          "start_time": 11.04,
+          "end_time": 11.34
+        },
+        {
+          "text": " ",
+          "start_time": 11.34,
+          "end_time": 11.42
+        },
+        {
+          "text": "guns.",
+          "start_time": 11.42,
+          "end_time": 11.72
+        },
+        {
+          "text": " ",
+          "start_time": 11.72,
+          "end_time": 11.72
+        },
+        {
+          "text": "So",
+          "start_time": 12.3,
+          "end_time": 12.38
+        },
+        {
+          "text": " ",
+          "start_time": 12.38,
+          "end_time": 12.42
+        },
+        {
+          "text": "the",
+          "start_time": 12.42,
+          "end_time": 12.48
+        },
+        {
+          "text": " ",
+          "start_time": 12.48,
+          "end_time": 12.52
+        },
+        {
+          "text": "army",
+          "start_time": 12.52,
+          "end_time": 12.7
+        },
+        {
+          "text": " ",
+          "start_time": 12.7,
+          "end_time": 12.78
+        },
+        {
+          "text": "sent",
+          "start_time": 12.78,
+          "end_time": 12.98
+        },
+        {
+          "text": " ",
+          "start_time": 12.98,
+          "end_time": 13.04
+        },
+        {
+          "text": "two",
+          "start_time": 13.04,
+          "end_time": 13.16
+        },
+        {
+          "text": " ",
+          "start_time": 13.16,
+          "end_time": 13.26
+        },
+        {
+          "text": "soldiers,",
+          "start_time": 13.26,
+          "end_time": 13.76
+        },
+        {
+          "text": " ",
+          "start_time": 13.76,
+          "end_time": 14.14
+        },
+        {
+          "text": "two",
+          "start_time": 14.14,
+          "end_time": 14.26
+        },
+        {
+          "text": " ",
+          "start_time": 14.26,
+          "end_time": 14.32
+        },
+        {
+          "text": "Lewis",
+          "start_time": 14.32,
+          "end_time": 14.56
+        },
+        {
+          "text": " ",
+          "start_time": 14.56,
+          "end_time": 14.64
+        },
+        {
+          "text": "guns,",
+          "start_time": 14.64,
+          "end_time": 15.0
+        },
+        {
+          "text": " ",
+          "start_time": 15.0,
+          "end_time": 15.32
+        },
+        {
+          "text": "and",
+          "start_time": 15.32,
+          "end_time": 15.4
+        },
+        {
+          "text": " ",
+          "start_time": 15.4,
+          "end_time": 15.5
+        },
+        {
+          "text": "10,000",
+          "start_time": 15.5,
+          "end_time": 16.059
+        },
+        {
+          "text": " ",
+          "start_time": 16.059,
+          "end_time": 16.1
+        },
+        {
+          "text": "rounds.",
+          "start_time": 16.1,
+          "end_time": 16.5
+        },
+        {
+          "text": " ",
+          "start_time": 16.5,
+          "end_time": 16.5
+        },
+        {
+          "text": "The",
+          "start_time": 17.04,
+          "end_time": 17.1
+        },
+        {
+          "text": " ",
+          "start_time": 17.1,
+          "end_time": 17.14
+        },
+        {
+          "text": "plan",
+          "start_time": 17.14,
+          "end_time": 17.3
+        },
+        {
+          "text": " ",
+          "start_time": 17.3,
+          "end_time": 17.34
+        },
+        {
+          "text": "was",
+          "start_time": 17.34,
+          "end_time": 17.44
+        },
+        {
+          "text": " ",
+          "start_time": 17.44,
+          "end_time": 17.48
+        },
+        {
+          "text": "simple.",
+          "start_time": 17.48,
+          "end_time": 17.76
+        },
+        {
+          "text": " ",
+          "start_time": 17.76,
+          "end_time": 17.76
+        },
+        {
+          "text": "The",
+          "start_time": 18.28,
+          "end_time": 18.36
+        },
+        {
+          "text": " ",
+          "start_time": 18.36,
+          "end_time": 18.42
+        },
+        {
+          "text": "emus",
+          "start_time": 18.42,
+          "end_time": 18.74
+        },
+        {
+          "text": " ",
+          "start_time": 18.74,
+          "end_time": 18.78
+        },
+        {
+          "text": "had",
+          "start_time": 18.78,
+          "end_time": 18.86
+        },
+        {
+          "text": " ",
+          "start_time": 18.86,
+          "end_time": 18.9
+        },
+        {
+          "text": "a",
+          "start_time": 18.9,
+          "end_time": 18.96
+        },
+        {
+          "text": " ",
+          "start_time": 18.96,
+          "end_time": 19.0
+        },
+        {
+          "text": "different",
+          "start_time": 19.0,
+          "end_time": 19.26
+        },
+        {
+          "text": " ",
+          "start_time": 19.26,
+          "end_time": 19.3
+        },
+        {
+          "text": "one.",
+          "start_time": 19.3,
+          "end_time": 19.46
+        },
+        {
+          "text": " ",
+          "start_time": 19.46,
+          "end_time": 19.46
+        },
+        {
+          "text": "They",
+          "start_time": 19.96,
+          "end_time": 20.06
+        },
+        {
+          "text": " ",
+          "start_time": 20.06,
+          "end_time": 20.1
+        },
+        {
+          "text": "split",
+          "start_time": 20.1,
+          "end_time": 20.3
+        },
+        {
+          "text": " ",
+          "start_time": 20.3,
+          "end_time": 20.34
+        },
+        {
+          "text": "into",
+          "start_time": 20.34,
+          "end_time": 20.52
+        },
+        {
+          "text": " ",
+          "start_time": 20.52,
+          "end_time": 20.56
+        },
+        {
+          "text": "small",
+          "start_time": 20.56,
+          "end_time": 20.78
+        },
+        {
+          "text": " ",
+          "start_time": 20.78,
+          "end_time": 20.88
+        },
+        {
+          "text": "groups",
+          "start_time": 20.88,
+          "end_time": 21.24
+        },
+        {
+          "text": " ",
+          "start_time": 21.24,
+          "end_time": 21.4
+        },
+        {
+          "text": "and",
+          "start_time": 21.4,
+          "end_time": 21.48
+        },
+        {
+          "text": " ",
+          "start_time": 21.48,
+          "end_time": 21.56
+        },
+        {
+          "text": "scattered",
+          "start_time": 21.56,
+          "end_time": 21.88
+        },
+        {
+          "text": " ",
+          "start_time": 21.88,
+          "end_time": 21.9
+        },
+        {
+          "text": "across",
+          "start_time": 21.9,
+          "end_time": 22.2
+        },
+        {
+          "text": " ",
+          "start_time": 22.2,
+          "end_time": 22.24
+        },
+        {
+          "text": "the",
+          "start_time": 22.24,
+          "end_time": 22.3
+        },
+        {
+          "text": " ",
+          "start_time": 22.3,
+          "end_time": 22.32
+        },
+        {
+          "text": "countryside.",
+          "start_time": 22.32,
+          "end_time": 22.92
+        },
+        {
+          "text": " ",
+          "start_time": 22.92,
+          "end_time": 22.92
+        },
+        {
+          "text": "The",
+          "start_time": 23.34,
+          "end_time": 23.44
+        },
+        {
+          "text": " ",
+          "start_time": 23.44,
+          "end_time": 23.46
+        },
+        {
+          "text": "soldiers",
+          "start_time": 23.46,
+          "end_time": 23.8
+        },
+        {
+          "text": " ",
+          "start_time": 23.8,
+          "end_time": 23.88
+        },
+        {
+          "text": "fired.",
+          "start_time": 23.88,
+          "end_time": 24.22
+        },
+        {
+          "text": " ",
+          "start_time": 24.22,
+          "end_time": 24.22
+        },
+        {
+          "text": "The",
+          "start_time": 24.68,
+          "end_time": 24.74
+        },
+        {
+          "text": " ",
+          "start_time": 24.74,
+          "end_time": 24.8
+        },
+        {
+          "text": "emus",
+          "start_time": 24.8,
+          "end_time": 25.1
+        },
+        {
+          "text": " ",
+          "start_time": 25.1,
+          "end_time": 25.14
+        },
+        {
+          "text": "kept",
+          "start_time": 25.14,
+          "end_time": 25.28
+        },
+        {
+          "text": " ",
+          "start_time": 25.28,
+          "end_time": 25.36
+        },
+        {
+          "text": "running.",
+          "start_time": 25.36,
+          "end_time": 25.64
+        },
+        {
+          "text": " ",
+          "start_time": 25.64,
+          "end_time": 25.64
+        },
+        {
+          "text": "After",
+          "start_time": 26.22,
+          "end_time": 26.36
+        },
+        {
+          "text": " ",
+          "start_time": 26.36,
+          "end_time": 26.46
+        },
+        {
+          "text": "five",
+          "start_time": 26.46,
+          "end_time": 26.7
+        },
+        {
+          "text": " ",
+          "start_time": 26.7,
+          "end_time": 26.78
+        },
+        {
+          "text": "weeks,",
+          "start_time": 26.78,
+          "end_time": 27.08
+        },
+        {
+          "text": " ",
+          "start_time": 27.08,
+          "end_time": 27.08
+        },
+        {
+          "text": "the",
+          "start_time": 27.44,
+          "end_time": 27.52
+        },
+        {
+          "text": " ",
+          "start_time": 27.52,
+          "end_time": 27.56
+        },
+        {
+          "text": "army",
+          "start_time": 27.56,
+          "end_time": 27.76
+        },
+        {
+          "text": " ",
+          "start_time": 27.76,
+          "end_time": 27.8
+        },
+        {
+          "text": "reported",
+          "start_time": 27.8,
+          "end_time": 28.2
+        },
+        {
+          "text": " ",
+          "start_time": 28.2,
+          "end_time": 28.54
+        },
+        {
+          "text": "986",
+          "start_time": 28.58,
+          "end_time": 29.74
+        },
+        {
+          "text": " ",
+          "start_time": 29.74,
+          "end_time": 29.8
+        },
+        {
+          "text": "emus",
+          "start_time": 29.8,
+          "end_time": 30.12
+        },
+        {
+          "text": " ",
+          "start_time": 30.12,
+          "end_time": 30.16
+        },
+        {
+          "text": "down",
+          "start_time": 30.16,
+          "end_time": 30.46
+        },
+        {
+          "text": " ",
+          "start_time": 30.46,
+          "end_time": 30.76
+        },
+        {
+          "text": "and",
+          "start_time": 30.78,
+          "end_time": 30.84
+        },
+        {
+          "text": " ",
+          "start_time": 30.84,
+          "end_time": 30.88
+        },
+        {
+          "text": "the",
+          "start_time": 30.88,
+          "end_time": 30.96
+        },
+        {
+          "text": " ",
+          "start_time": 30.96,
+          "end_time": 31.0
+        },
+        {
+          "text": "wheat",
+          "start_time": 31.0,
+          "end_time": 31.22
+        },
+        {
+          "text": " ",
+          "start_time": 31.22,
+          "end_time": 31.3
+        },
+        {
+          "text": "still",
+          "start_time": 31.3,
+          "end_time": 31.46
+        },
+        {
+          "text": " ",
+          "start_time": 31.46,
+          "end_time": 31.5
+        },
+        {
+          "text": "being",
+          "start_time": 31.5,
+          "end_time": 31.72
+        },
+        {
+          "text": " ",
+          "start_time": 31.72,
+          "end_time": 31.78
+        },
+        {
+          "text": "eaten.",
+          "start_time": 31.78,
+          "end_time": 32.06
+        },
+        {
+          "text": " ",
+          "start_time": 32.06,
+          "end_time": 32.06
+        },
+        {
+          "text": "The",
+          "start_time": 32.64,
+          "end_time": 32.7
+        },
+        {
+          "text": " ",
+          "start_time": 32.7,
+          "end_time": 32.74
+        },
+        {
+          "text": "army",
+          "start_time": 32.74,
+          "end_time": 32.96
+        },
+        {
+          "text": " ",
+          "start_time": 32.96,
+          "end_time": 32.98
+        },
+        {
+          "text": "went",
+          "start_time": 32.98,
+          "end_time": 33.12
+        },
+        {
+          "text": " ",
+          "start_time": 33.12,
+          "end_time": 33.16
+        },
+        {
+          "text": "home.",
+          "start_time": 33.16,
+          "end_time": 33.46
+        },
+        {
+          "text": " ",
+          "start_time": 33.46,
+          "end_time": 33.92
+        },
+        {
+          "text": "The",
+          "start_time": 33.92,
+          "end_time": 33.98
+        },
+        {
+          "text": " ",
+          "start_time": 33.98,
+          "end_time": 34.04
+        },
+        {
+          "text": "emus",
+          "start_time": 34.06,
+          "end_time": 34.36
+        },
+        {
+          "text": " ",
+          "start_time": 34.36,
+          "end_time": 34.4
+        },
+        {
+          "text": "did",
+          "start_time": 34.4,
+          "end_time": 34.5
+        },
+        {
+          "text": " ",
+          "start_time": 34.5,
+          "end_time": 34.56
+        },
+        {
+          "text": "not.",
+          "start_time": 34.56,
+          "end_time": 34.86
+        }
+      ]
+    }
+  ]
+}
