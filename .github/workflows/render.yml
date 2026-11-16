@@ -1,0 +1,175 @@
+name: Render Emu War Video
+on: [workflow_dispatch]
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Video Engine
+        run: |
+          npm init -y
+          npm install remotion @remotion/cli @remotion/three three @react-three/fiber @react-three/drei @react-three/postprocessing postprocessing react react-dom
+      - name: Build 3D-2D Hybrid Scenes
+        run: |
+          node -e '
+          const fs = require("fs");
+          const files = fs.readdirSync(".");
+          const audioFile = files.find(f => f.endsWith(".mp3") || f.endsWith(".wav") || f.endsWith(".m4a")) || "";
+          const jsonFile = files.find(f => f.endsWith(".json") && f !== "package.json" && f !== "package-lock.json") || "";
+          fs.mkdirSync("public", { recursive: true });
+          if (audioFile) fs.copyFileSync(audioFile, "public/voice.mp3");
+          let rawData = null;
+          if (jsonFile) {
+            try { rawData = JSON.parse(fs.readFileSync(jsonFile, "utf8")); } catch (e) {}
+          }
+          fs.mkdirSync("src", { recursive: true });
+          fs.writeFileSync("src/data.json", JSON.stringify(rawData || {}));
+          fs.writeFileSync("src/index.ts", `import { registerRoot } from "remotion"; import { Root } from "./Root"; registerRoot(Root);`);
+          fs.writeFileSync("src/Root.tsx", `import React from "react"; import { Composition } from "remotion"; import { EmuWar } from "./EmuWar"; export const Root: React.FC = () => (<Composition id="EmuWar" component={EmuWar} durationInFrames={1050} fps={30} width={1080} height={1920} />);`);
+          fs.writeFileSync("src/EmuWar.tsx", `
+          import React, { useRef, useMemo } from "react";
+          import { AbsoluteFill, Audio, staticFile, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+          import { ThreeCanvas } from "@remotion/three";
+          import * as THREE from "three";
+
+          const WheatField: React.FC<{ frame: number }> = ({ frame }) => {
+            const meshRef = useRef<THREE.InstancedMesh>(null);
+            const count = 450;
+            const dummy = useMemo(() => new THREE.Object3D(), []);
+            const positions = useMemo(() => Array.from({ length: count }, (_, i) => ({
+              x: ((i * 73) % 100) / 5 - 10,
+              z: -((i * 37) % 100) / 4 - 1,
+              h: 0.85 + (i % 5) * 0.25,
+              phase: i * 0.5
+            })), []);
+
+            React.useEffect(() => {
+              if (!meshRef.current) return;
+              positions.forEach((p, i) => {
+                dummy.position.set(p.x, p.h / 2 - 1.5, p.z);
+                dummy.rotation.z = Math.sin(frame * 0.08 + p.phase) * 0.2;
+                dummy.scale.set(0.08, p.h, 0.08);
+                dummy.updateMatrix();
+                meshRef.current!.setMatrixAt(i, dummy.matrix);
+              });
+              meshRef.current.instanceMatrix.needsUpdate = true;
+            }, [frame, dummy, positions]);
+
+            return (
+              <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
+                <coneGeometry args={[0.5, 1, 5]} />
+                <meshToonMaterial color="#e8b948" />
+              </instancedMesh>
+            );
+          };
+
+          const BeanCharacter: React.FC<{ x: number; y: number; z: number; color: string; hatColor: string; flip?: boolean; frame: number; offset?: number; isEmu?: boolean }> = ({ x, y, z, color, hatColor, flip = false, frame, offset = 0, isEmu = false }) => {
+            const bounce = Math.abs(Math.sin((frame + offset) * 0.24)) * 0.28;
+            const tilt = Math.sin((frame + offset) * 0.24) * 0.14;
+            return (
+              <group position={[x, y + bounce, z]} rotation={[0, flip ? Math.PI : 0, tilt]}>
+                {/* #241726 Plum Outline */}
+                <mesh position={[0, 0, -0.02]} scale={[1.13, 1.09, 1]}>
+                  <capsuleGeometry args={[0.42, isEmu ? 0.85 : 0.65, 8, 16]} />
+                  <meshBasicMaterial color="#241726" />
+                </mesh>
+                {/* Bean Body */}
+                <mesh>
+                  <capsuleGeometry args={[0.38, isEmu ? 0.8 : 0.6, 8, 16]} />
+                  <meshBasicMaterial color={color} />
+                </mesh>
+                {/* Hat or Beak */}
+                {isEmu ? (
+                  <mesh position={[0.45, 0.45, 0.02]} rotation={[0, 0, -0.3]}>
+                    <coneGeometry args={[0.14, 0.35, 8]} />
+                    <meshBasicMaterial color="#f5a623" />
+                  </mesh>
+                ) : (
+                  <mesh position={[0.05, 0.62, 0.02]}>
+                    <boxGeometry args={[0.72, 0.14, 0.2]} />
+                    <meshBasicMaterial color={hatColor} />
+                  </mesh>
+                )}
+                {/* Expressive Eye */}
+                <mesh position={[0.22, isEmu ? 0.48 : 0.28, 0.36]}>
+                  <sphereGeometry args={[0.08, 12, 12]} />
+                  <meshBasicMaterial color="#ffffff" />
+                </mesh>
+                <mesh position={[0.25, isEmu ? 0.48 : 0.28, 0.42]}>
+                  <sphereGeometry args={[0.04, 12, 12]} />
+                  <meshBasicMaterial color="#241726" />
+                </mesh>
+              </group>
+            );
+          };
+
+          export const EmuWar: React.FC = () => {
+            const frame = useCurrentFrame();
+            const { width, height } = useVideoConfig();
+            const isImpact = (frame >= 240 && frame <= 247) || (frame >= 540 && frame <= 547) || (frame >= 810 && frame <= 817);
+            const shakeX = isImpact ? Math.sin(frame * 3.5) * 0.28 : 0;
+            const shakeY = isImpact ? Math.cos(frame * 3.5) * 0.18 : 0;
+            const zoom = interpolate(frame, [0, 1050], [6.6, 4.7]);
+            const emuRunX = interpolate(frame % 160, [0, 160], [-4.8, 4.8]);
+            const soldierX = frame > 810 ? interpolate(frame, [810, 1050], [-1.2, -5.5]) : -1.2;
+
+            const scenes = [
+              { start: 0, end: 240, title: "1932: WESTERN AUSTRALIA", sub: "20,000 Emus Invade the Wheat Fields" },
+              { start: 240, end: 540, title: "ROYAL ARTILLERY DEPLOYS", sub: "Lewis Machine Guns vs. Flightless Birds" },
+              { start: 540, end: 810, title: "GUERRILLA EMU TACTICS", sub: "Splitting Into Squads at 50 km/h" },
+              { start: 810, end: 1050, title: "VICTORY: THE EMUS", sub: "The Australian Army Retreats" }
+            ];
+            const active = scenes.find(s => frame >= s.start && frame < s.end) || scenes[0];
+
+            return (
+              <AbsoluteFill style={{ backgroundColor: "#2a75c7" }}>
+                <ThreeCanvas width={width} height={height} camera={{ position: [shakeX, 1.2 + shakeY, zoom], fov: 42 }}>
+                  <color attach="background" args={["#3c8ce7"]} />
+                  <fog attach="fog" args={["#89c4f4", 6, 22]} />
+                  <ambientLight intensity={0.75} color="#b8c6ff" />
+                  <directionalLight position={[5, 10, 4]} intensity={1.8} color="#fff1c1" />
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, -5]}>
+                    <planeGeometry args={[40, 40]} />
+                    <meshToonMaterial color="#c9933b" />
+                  </mesh>
+                  <mesh position={[-4, -0.6, -12]}>
+                    <sphereGeometry args={[5, 24, 16]} />
+                    <meshToonMaterial color="#5d6e9e" />
+                  </mesh>
+                  <mesh position={[5, -0.4, -14]}>
+                    <sphereGeometry args={[6.5, 24, 16]} />
+                    <meshToonMaterial color="#4b5a87" />
+                  </mesh>
+                  <WheatField frame={frame} />
+                  {/* Soldiers */}
+                  <BeanCharacter x={soldierX} y={-0.6} z={0.5} color="#5c6b43" hatColor="#3e472c" flip={frame > 810} frame={frame} offset={0} />
+                  <BeanCharacter x={soldierX + 0.9} y={-0.6} z={0.2} color="#6b7a4f" hatColor="#3e472c" flip={frame > 810} frame={frame} offset={10} />
+                  {/* Emus */}
+                  <BeanCharacter x={emuRunX} y={-0.4} z={-1.2} color="#4a3b32" hatColor="#241726" frame={frame} offset={5} isEmu />
+                  <BeanCharacter x={emuRunX - 1.3} y={-0.4} z={-1.8} color="#59473c" hatColor="#241726" frame={frame} offset={14} isEmu />
+                  <BeanCharacter x={emuRunX - 2.5} y={-0.4} z={-0.8} color="#3d3028" hatColor="#241726" frame={frame} offset={22} isEmu />
+                </ThreeCanvas>
+                <div style={{ position: "absolute", top: 150, width: "100%", textAlign: "center", padding: "0 40px", fontFamily: "sans-serif" }}>
+                  <div style={{ display: "inline-block", background: "#241726", color: "#ffd54f", padding: "14px 30px", borderRadius: 18, fontSize: 38, fontWeight: 900, letterSpacing: 2, boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
+                    {active.title}
+                  </div>
+                  <div style={{ marginTop: 18, color: "#ffffff", fontSize: 32, fontWeight: 700, textShadow: "0 3px 10px #241726" }}>
+                    {active.sub}
+                  </div>
+                </div>
+                {${audioFile ? "true" : "false"} && <Audio src={staticFile("voice.mp3")} />}
+              </AbsoluteFill>
+            );
+          };
+          `);
+          '
+      - name: Render MP4 Video
+        run: npx remotion render src/index.ts EmuWar final_emu_war.mp4 --gl=angle
+      - name: Upload Video
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-emu-war-video
+          path: final_emu_war.mp4
